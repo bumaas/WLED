@@ -3,7 +3,7 @@
 	"author": "Swen Babenschneider",  
 	"name": "WLED Modules",  
 	"url": "babenschneider.net",
-	"version": "0.8",  
-	"build": 1,  
-	"date": 1650710316
+	"version": "0.8.1",  
+	"build": 2,  
+	"date": 1650729859
 }
