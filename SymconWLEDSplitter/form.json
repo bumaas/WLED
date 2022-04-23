@@ -3,7 +3,7 @@
     [
         { "type": "CheckBox", "name": "Active", "caption": "Active" },
         { "type": "ValidationTextBox", "name": "IPAddress", "caption": "Host" },
-        { "type": "CheckBox", "name": "SyncPower", "caption": "Sync Power with Segments" },
+        { "type": "CheckBox", "name": "SyncPower", "caption": "Sync Power with Segments" }
     ],
     "actions":
     [
