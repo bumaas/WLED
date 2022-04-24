@@ -46,8 +46,9 @@ class WLEDSegment extends IPSModule
     public function GetUpdate(){
         $this->SendData(json_encode(array("cmd" => "update")));
     }
-    private function SendData($jsonString)
+    public function SendData($jsonString)
     {
+
         @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  utf8_decode($jsonString))));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }

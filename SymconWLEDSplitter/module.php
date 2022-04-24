@@ -67,7 +67,7 @@ class WLEDSplitter extends IPSModule
         $this->SetStatus(102);
     }
 
-    private function SendData($jsonString)
+    public function SendData($jsonString)
     {
         $this->SendDataToParent(json_encode(Array("DataID" => "{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}", "FrameTyp" => 1, "Fin" => true, "Buffer" => utf8_decode($jsonString))));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
