@@ -44,7 +44,7 @@ class WLEDSplitter extends IPSModule
                 $eff_arr = json_decode(file_get_contents("http://".$this->ReadPropertyString("IPAddress")."/json/eff"), true);
 
                 foreach ($eff_arr as $item => $key) {
-                    IPS_SetVariableProfileAssociation("WLED.Effects", $key, $item, "", -1);
+                    IPS_SetVariableProfileAssociation("WLED.Effects", $item, $key, "", -1);
                 }
             }
 
@@ -54,7 +54,7 @@ class WLEDSplitter extends IPSModule
                 $eff_arr = json_decode(file_get_contents("http://".$this->ReadPropertyString("IPAddress")."/json/pal"), true);
 
                 foreach ($eff_arr as $item => $key) {
-                    IPS_SetVariableProfileAssociation("WLED.Palettes", $key, $item, "", -1);
+                    IPS_SetVariableProfileAssociation("WLED.Palettes", $item, $key, "", -1);
                 }
             }
         }
