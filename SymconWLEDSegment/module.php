@@ -205,7 +205,8 @@ class WLEDSegment extends IPSModule
                     $segArr["col"][2] = array(0,0,0);
                 }
 
-                if($this->GetIDForIdent("VariableWhite") != false){
+                $wID = @$this->GetIDForIdent("VariableWhite");
+                if($wID !== false){
                     $white = $this->GetValue("VariableWhite");
                     $segArr["col"][0][3] = $white;
                     $segArr["col"][1][3] = $white;
