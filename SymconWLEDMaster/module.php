@@ -2,16 +2,17 @@
 
 class WLEDMaster extends IPSModule
 {
-    // Buffer sind immer String. Kovertierungen durch integer, float oder bool können Probleme verursachen.
-    // Also wird mit serialize immer alles typensicher in einen String gewandelt.
-    protected function SetBuffer($Name, $Daten)
-    {
-        parent::SetBuffer($Name, serialize($Daten));
-    }
-    protected function GetBuffer($Name)
-    {
-        return unserialize(parent::GetBuffer($Name));
-    }
+
+    private const VAR_IDENT_POWER = 'VariablePower';
+    private const VAR_IDENT_BRIGHTNESS = 'VariableBrightness';
+    private const VAR_IDENT_TRANSITION = 'VariableTransition';
+    private const VAR_IDENT_PRESET = 'VariablePresetsID';
+    private const VAR_IDENT_PLAYLIST = 'VariablePlaylistID';
+    private const VAR_IDENT_NIGHTLIGHT_ON = 'VariableNightlightOn';
+    private const VAR_IDENT_NIGHTLIGHT_DURATION = 'VariableNightlightDuration';
+    private const VAR_IDENT_NIGHTLIGHT_MODE = 'VariableNightlightMode';
+    private const VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS = 'VariableNightlightTargetBrightness';
+    private const VAR_IDENT_NIGHTLIGHT_REMAININGDURATION = 'VariableNightlightRemainingDuration';
 
     public function Create()
     {
@@ -23,7 +24,6 @@ class WLEDMaster extends IPSModule
         $this->RegisterPropertyBoolean("ShowPresets", false);
         $this->RegisterPropertyBoolean("ShowPlaylist", false);
 
-
         $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
     public function ApplyChanges()
@@ -31,21 +31,55 @@ class WLEDMaster extends IPSModule
         $this->RegisterMessage(0, 10001 /* IPS_KERNELSTARTED */);
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
-        $this->SendDebug(__FUNCTION__, '', 0);
 
-        $this->SetBuffer("UpdateVariables", true);
+        $this->RegisterVariables();
 
         $this->GetUpdate();
         $this->SetStatus(IS_ACTIVE);
     }
 
+    private function RegisterVariables(){
+
+        $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, "Power", "~Switch", 0);
+        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, "Brightness", "~Intensity.255", 10);
+        $this->EnableAction(self::VAR_IDENT_POWER);
+        $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
+
+        $this->RegisterVariableFloat(self::VAR_IDENT_TRANSITION, "Transition", "WLED.Transition", 20);
+        $this->EnableAction(self::VAR_IDENT_TRANSITION);
+
+
+        if($this->ReadPropertyBoolean("ShowPresets")) {
+            $this->RegisterVariableInteger(self::VAR_IDENT_PRESET, "Presets ID", "", 30);
+            $this->EnableAction(self::VAR_IDENT_PRESET);
+        }
+
+        if($this->ReadPropertyBoolean("ShowPlaylist")) {
+            $this->RegisterVariableInteger(self::VAR_IDENT_PLAYLIST, "Playlist ID", "", 35);
+            $this->EnableAction(self::VAR_IDENT_PLAYLIST);
+        }
+
+        if($this->ReadPropertyBoolean("ShowNightlight")){
+            $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, "Nightlight On", "~Switch", 50);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_DURATION, "Nightlight Duration", "WLED.NightlightDuration", 51);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, "Nightlight Mode", "WLED.NightlightMode", 52);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, "Nightlight Target Brightness", "~Intensity.255", 53);
+            $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_ON);
+            $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_DURATION);
+            $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_MODE);
+            $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS);
+
+            //restdauer
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, "Remaining Nightlight Duration", "~UnixTimestampTime", 54);
+        }
+
+    }
     public function GetUpdate(){
-        $this->SendData(json_encode(array("cmd" => "update")));
+        $this->SendData(json_encode(['v' => true]));
     }
     public function SendData($jsonString)
     {
-
-        @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  utf8_decode($jsonString))));
+        @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  $jsonString)));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
     public function ReceiveData($JSONString)
@@ -54,96 +88,40 @@ class WLEDMaster extends IPSModule
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
         $data = json_decode($data->Buffer, true);
 
-        //variablen anlegen, wenn diese fehlen
-        if($this->GetBuffer("UpdateVariables")){
-            $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
-            $this->RegisterVariableInteger("VariableBrightness", "Brightness", "~Intensity.255", 10);
-            $this->EnableAction("VariablePower");
-            $this->EnableAction("VariableBrightness");
-
-            $this->RegisterVariableFloat("VariableTransition", "Transition", "WLED.Transition", 20);
-            $this->EnableAction("VariableTransition");
-
-
-            if($this->ReadPropertyBoolean("ShowPresets")) {
-                $this->RegisterVariableInteger("VariablePresetsID", "Presets ID", "", 30);
-                $this->EnableAction("VariablePresetsID");
-            }
-            else{
-                @$this->DisableAction('VariablePresetsID');
-                $this->UnregisterVariable('VariablePresetsID');
-            }
-
-            if($this->ReadPropertyBoolean("ShowPlaylist")) {
-                $this->RegisterVariableInteger("VariablePlaylistID", "Playlist ID", "", 35);
-                $this->EnableAction("VariablePlaylistID");
-            }
-            else{
-                @$this->DisableAction('VariablePlaylistID');
-                $this->UnregisterVariable('VariablePlaylistID');
-            }
-
-            if($this->ReadPropertyBoolean("ShowNightlight")){
-                $this->RegisterVariableBoolean("VariableNightlightOn", "Nightlight On", "~Switch", 50);
-                $this->RegisterVariableInteger("VariableNightlightDuration", "Nightlight Duration", "WLED.NightlightDuration", 51);
-                $this->RegisterVariableInteger("VariableNightlightMode", "Nightlight Mode", "WLED.NightlightMode", 52);
-                $this->RegisterVariableInteger("VariableNightlightTargetBrightness", "Nightlight Target Brightness", "~Intensity.255", 53);
-                $this->EnableAction("VariableNightlightOn");
-                $this->EnableAction("VariableNightlightDuration");
-                $this->EnableAction("VariableNightlightMode");
-                $this->EnableAction("VariableNightlightTargetBrightness");
-
-                //restdauer
-                $this->RegisterVariableInteger("VariableNightlightRemainingDuration", "Remaining Nightlight Duration", "~UnixTimestampTime", 54);
-            }else{
-                @$this->DisableAction('VariableNightlightOn');
-                @$this->DisableAction('VariableNightlightDuration');
-                @$this->DisableAction('VariableNightlightMode');
-                @$this->DisableAction('VariableNightlightTargetBrightness');
-                $this->UnregisterVariable('VariableNightlightOn');
-                $this->UnregisterVariable('VariableNightlightDuration');
-                $this->UnregisterVariable('VariableNightlightMode');
-                $this->UnregisterVariable('VariableNightlightTargetBrightness');
-                $this->UnregisterVariable('VariableNightlightRemainingDuration');
-            }
-
-            $this->SetBuffer("UpdateVariables", false);
-        }
-
         //daten verarbeiten!
         if(array_key_exists("on", $data)){
-            $this->SetValue("VariablePower", $data["on"]);
+            $this->SetValue(self::VAR_IDENT_POWER, $data["on"]);
         }
         if(array_key_exists("bri", $data)){
-            $this->SetValue("VariableBrightness", $data["bri"]);
+            $this->SetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
         }
         if(array_key_exists("transition", $data)){
-            $this->SetValue("VariableTransition", ($data["transition"] / 10));
+            $this->SetValue(self::VAR_IDENT_TRANSITION, ($data["transition"] / 10));
         }
 
         if($this->ReadPropertyBoolean("ShowPresets") && array_key_exists("ps", $data)) {
-            $this->SetValue("VariablePresetsID", $data["ps"]);
+            $this->SetValue(self::VAR_IDENT_PRESET, $data["ps"]);
         }
 
         if($this->ReadPropertyBoolean("ShowPlaylist") && array_key_exists("pl", $data)) {
-            $this->SetValue("VariablePlaylistID", $data["pl"]);
+            $this->SetValue(self::VAR_IDENT_PLAYLIST, $data["pl"]);
         }
 
         if($this->ReadPropertyBoolean("ShowNightlight") && array_key_exists("nl", $data)) {
             if(array_key_exists("on", $data["nl"])){
-                $this->SetValue("VariableNightlightOn", $data["nl"]["on"]);
+                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_ON, $data["nl"]["on"]);
             }
 
             if(array_key_exists("dur", $data["nl"])){
-                $this->SetValue("VariableNightlightDuration", $data["nl"]["dur"]);
+                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_DURATION, $data["nl"]["dur"]);
             }
 
             if(array_key_exists("mode", $data["nl"])){
-                $this->SetValue("VariableNightlightMode", $data["nl"]["mode"]);
+                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_MODE, $data["nl"]["mode"]);
             }
 
             if(array_key_exists("tbri", $data["nl"])){
-                $this->SetValue("VariableNightlightTargetBrightness", $data["nl"]["tbri"]);
+                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, $data["nl"]["tbri"]);
             }
 
             if(array_key_exists("rem", $data["nl"])){
@@ -158,7 +136,7 @@ class WLEDMaster extends IPSModule
                 $time = new DateTime('2001-01-01');
                 $time->setTime($h, $m, $s);
 
-                $this->SetValue("VariableNightlightRemainingDuration", $time->getTimestamp());
+                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $time->getTimestamp());
             }
         }
     }
@@ -166,63 +144,63 @@ class WLEDMaster extends IPSModule
         $sendArr = array();
 
         switch($Ident) {
-            case "VariablePower":
+            case self::VAR_IDENT_POWER:
                 $sendArr["on"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableBrightness":
+            case self::VAR_IDENT_BRIGHTNESS:
                 $sendArr["bri"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableTransition":
+            case self::VAR_IDENT_TRANSITION:
                 $sendArr["transition"] = $Value*10;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariablePresetsID":
+            case self::VAR_IDENT_PRESET:
                 $sendArr["ps"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariablePlaylistID":
+            case self::VAR_IDENT_PLAYLIST:
                 $sendArr["pl"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableNightlightOn":
+            case self::VAR_IDENT_NIGHTLIGHT_ON:
                 $sendArr["nl"]["on"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableNightlightDuration":
+            case self::VAR_IDENT_NIGHTLIGHT_DURATION:
                 $sendArr["nl"]["dur"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableNightlightMode":
+            case self::VAR_IDENT_NIGHTLIGHT_MODE:
                 $sendArr["nl"]["mode"] = $Value;
 
                 $sendStr = json_encode($sendArr);
                 $this->SendData($sendStr);
                 $this->SetValue($Ident, $Value);
                 break;
-            case "VariableNightlightTargetBrightness":
+            case self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS:
                 $sendArr["nl"]["tbri"] = $Value;
 
                 $sendStr = json_encode($sendArr);
