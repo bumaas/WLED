@@ -36,7 +36,7 @@ class WLEDMaster extends IPSModule
         $this->SetBuffer("UpdateVariables", true);
 
         $this->GetUpdate();
-        $this->SetStatus(102);
+        $this->SetStatus(IS_ACTIVE);
     }
 
     public function GetUpdate(){

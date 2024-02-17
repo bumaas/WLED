@@ -87,7 +87,7 @@ class WLEDSplitter extends IPSModule
             IPS_SetVariableProfileAssociation("WLED.NightlightMode", 3, "sunrise", "", -1);
         }
 
-        $this->SetStatus(102);
+        $this->SetStatus(IS_ACTIVE);
     }
 
     public function SendData($jsonString)
@@ -226,7 +226,7 @@ class WLEDSplitter extends IPSModule
         } elseif (is_bool($Data)) {
             parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
         } else {
-            if (IPS_GetKernelRunlevel() == KR_READY) {
+            if (IPS_GetKernelRunlevel() === KR_READY) {
                 parent::SendDebug($Message, (string) $Data, $Format);
             } else {
                 $this->LogMessage($Message . ':' . (string) $Data, KL_DEBUG);

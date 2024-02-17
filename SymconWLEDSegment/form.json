@@ -9,12 +9,11 @@
     ],
     "actions":
     [
-        { "type": "Button", "label": "Status abrufen", "onClick": "WLEDSegment_GetUpdate($id);" }
+        { "type": "Button", "label": "Status abrufen", "onClick": "WLEDSegment_GetUpdate($id);" },
+        { "type": "TestCenter"}
     ],
     "status":
     [
-        { "code": 102, "icon": "active", "caption": "Connection Success!" },
-        { "code": 104, "icon": "active", "caption": "Connection Lost!" },
         { "code": 203, "icon": "error", "caption": "Internal Error!" }
 
     ]
