@@ -2,37 +2,101 @@
 
 class WLEDSegment extends IPSModule
 {
-    // Buffer sind immer String. Kovertierungen durch integer, float oder bool können Probleme verursachen.
-    // Also wird mit serialize immer alles typensicher in einen String gewandelt.
+    private const PROP_SEGMENT_ID = 'SegmentID';
+    private const PROP_MORE_COLORS = 'MoreColors';
+    private const PROP_SHOW_TEMPERATURE = 'ShowTemperature';
+    private const PROP_SHOW_EFFECTS = 'ShowEffects';
+    private const PROP_SHOW_PALETTS = 'ShowPalettes';
+
+    private const ATTR_DEVICE_INFO = 'DeviceInfo';
+
     public function Create()
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
 
         // Modul-Eigenschaftserstellung
-        $this->RegisterPropertyInteger("SegmentID", 0);
-        $this->RegisterPropertyBoolean("MoreColors", false);
-        $this->RegisterPropertyBoolean("ShowTemperature", false);
-        $this->RegisterPropertyBoolean("ShowEffects", false);
-        $this->RegisterPropertyBoolean("ShowPalettes", false);
+        $this->RegisterPropertyInteger(self::PROP_SEGMENT_ID, 0);
+        $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_TEMPERATURE, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_EFFECTS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_PALETTS, false);
 
+        $this->RegisterAttributeString('DeviceInfo', json_encode([]));
 
         $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
     public function ApplyChanges()
     {
-        $this->RegisterMessage(0, 10001 /* IPS_KERNELSTARTED */);
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
 
-        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*('.$this->ReadPropertyInteger("SegmentID").')[\\\”]*.*');
+        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*('.$this->ReadPropertyInteger(self::PROP_SEGMENT_ID).')[\\\”]*.*');
+
+        $this->RegisterVariables();
 
         $this->GetUpdate();
+
+        $host = $this->getHostFromIOInstance();
+        $deviceInfo = $this->getData($host, '/json/info');
+        if (count($deviceInfo)){
+            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo));
+            $this->SetSummary(sprintf('%s:%s', $deviceInfo['name'], $this->ReadPropertyInteger(self::PROP_SEGMENT_ID)));
+        }
         $this->SetStatus(IS_ACTIVE);
     }
 
-    public function GetUpdate(){
+    private function RegisterVariables()
+    {
+        $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
+        $this->RegisterVariableInteger("VariableBrightness", "Brightness", "~Intensity.255", 10);
+        $this->EnableAction("VariablePower");
+        $this->EnableAction("VariableBrightness");
+
+        $this->RegisterVariableInteger("VariableColor1", "Color", "~HexColor", 20);
+        $this->EnableAction("VariableColor1");
+        if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
+            $this->RegisterVariableInteger("VariableColor2", "Color 2", "~HexColor", 21);
+            $this->RegisterVariableInteger("VariableColor3", "Color 3", "~HexColor", 22);
+            $this->EnableAction("VariableColor2");
+            $this->EnableAction("VariableColor3");
+        }
+
+        $this->RegisterVariableInteger("VariableWhite", "White", "~Intensity.255", 23);
+        $this->EnableAction("VariableWhite");
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_TEMPERATURE)) {
+            $this->RegisterVariableInteger("VariableTemperature", "Temperature", "WLED.Temperature", 24);
+            $this->EnableAction("VariableTemperature");
+        }
+
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)){
+            $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
+            $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo)), 0);
+            $wledEffects = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
+            $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
+
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
+                $this->RegisterVariableInteger("VariableEffects", "Effects", $wledEffects, 60);
+                $this->RegisterVariableInteger("VariableEffectsSpeed", "Effect Speed", "~Intensity.255", 61);
+                $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 62);
+                $this->EnableAction("VariableEffects");
+                $this->EnableAction("VariableEffectsSpeed");
+                $this->EnableAction("VariableEffectsIntensity");
+            }
+
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)) {
+                $this->RegisterVariableInteger("VariablePalettes", "Palettes", $wledPalettes, 50);
+                $this->EnableAction("VariablePalettes");
+            }
+        }
+    }
+
+        public function GetUpdate(){
         $this->SendData(json_encode(['v' => true]));
     }
     public function SendData(string $jsonString)
@@ -41,48 +105,21 @@ class WLEDSegment extends IPSModule
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    {
+        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+
+        if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
+            $this->ApplyChanges();
+        }
+    }
+
     public function ReceiveData($JSONString)
     {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
         $data = json_decode($data->Buffer, true);
 
-        $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
-        $this->RegisterVariableInteger("VariableBrightness", "Brightness", "~Intensity.255", 10);
-        $this->EnableAction("VariablePower");
-        $this->EnableAction("VariableBrightness");
-
-        $this->RegisterVariableInteger("VariableColor1", "Color", "~HexColor", 20);
-        $this->EnableAction("VariableColor1");
-        if ($this->ReadPropertyBoolean("MoreColors")) {
-            $this->RegisterVariableInteger("VariableColor2", "Color 2", "~HexColor", 21);
-            $this->RegisterVariableInteger("VariableColor3", "Color 3", "~HexColor", 22);
-            $this->EnableAction("VariableColor2");
-            $this->EnableAction("VariableColor3");
-        }
-
-        if (count($data["col"][0]) > 3) { //weiskanal
-            $this->RegisterVariableInteger("VariableWhite", "White", "~Intensity.255", 23);
-            $this->EnableAction("VariableWhite");
-        }
-        if ($this->ReadPropertyBoolean("ShowTemperature")) {
-            $this->RegisterVariableInteger("VariableTemperature", "Temperature", "WLED.Temperature", 24);
-            $this->EnableAction("VariableTemperature");
-        }
-
-        if ($this->ReadPropertyBoolean("ShowEffects")) {
-            $this->RegisterVariableInteger("VariableEffects", "Effects", "WLED.Effects", 50);
-            $this->RegisterVariableInteger("VariableEffectsSpeed", "Effect Speed", "~Intensity.255", 51);
-            $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 52);
-            $this->EnableAction("VariableEffects");
-            $this->EnableAction("VariableEffectsSpeed");
-            $this->EnableAction("VariableEffectsIntensity");
-        }
-
-        if ($this->ReadPropertyBoolean("ShowPalettes")) {
-            $this->RegisterVariableInteger("VariablePalettes", "Palettes", "WLED.Palettes", 50);
-            $this->EnableAction("VariablePalettes");
-        }
 
 
         //daten verarbeiten!
@@ -96,7 +133,7 @@ class WLEDSegment extends IPSModule
         if (array_key_exists("col", $data)) {
             $this->SetValue("VariableColor1", $this->RGBToHex($data["col"][0]));
 
-            if ($this->ReadPropertyBoolean("MoreColors")) {
+            if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
                 $this->SetValue("VariableColor2", $this->RGBToHex($data["col"][1]));
                 $this->SetValue("VariableColor3", $this->RGBToHex($data["col"][2]));
             }
@@ -107,29 +144,29 @@ class WLEDSegment extends IPSModule
         }
 
         if (array_key_exists("cct", $data)) {
-            if ($this->ReadPropertyBoolean("ShowTemperature")) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_TEMPERATURE)) {
                 $this->SetValue("VariableTemperature", $data["cct"]);
             }
         }
 
         if (array_key_exists("pal", $data)) {
-            if ($this->ReadPropertyBoolean("ShowPalettes")) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)) {
                 $this->SetValue("VariablePalettes", $data["pal"]);
             }
         }
 
         if (array_key_exists("fx", $data)) {
-            if ($this->ReadPropertyBoolean("ShowEffects")) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
                 $this->SetValue("VariableEffects", $data["fx"]);
             }
         }
         if (array_key_exists("sx", $data)) {
-            if ($this->ReadPropertyBoolean("ShowEffects")) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
                 $this->SetValue("VariableEffectsSpeed", $data["sx"]);
             }
         }
         if (array_key_exists("ix", $data)) {
-            if ($this->ReadPropertyBoolean("ShowEffects")) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
                 $this->SetValue("VariableEffectsIntensity", $data["ix"]);
             }
         }
@@ -137,7 +174,7 @@ class WLEDSegment extends IPSModule
     public function RequestAction($Ident, $Value) {
         $sendArr = array();
         $segArr = array();
-        $segArr["id"] = $this->ReadPropertyInteger("SegmentID");
+        $segArr["id"] = $this->ReadPropertyInteger(self::PROP_SEGMENT_ID);
 
         switch($Ident) {
             case "VariablePower":
@@ -164,7 +201,7 @@ class WLEDSegment extends IPSModule
 
                 $segArr["col"][0] = $this->HexToRGB($this->GetValue("VariableColor1"));
 
-                if($this->ReadPropertyBoolean("MoreColors")) {
+                if($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
                     $segArr["col"][1] = $this->HexToRGB($this->GetValue("VariableColor2"));
                     $segArr["col"][2] = $this->HexToRGB($this->GetValue("VariableColor3"));
                 }else{
@@ -275,6 +312,28 @@ class WLEDSegment extends IPSModule
     }
     private function RGBToHex($rgb_arr){
         return $rgb_arr[0]*256*256 + $rgb_arr[1]*256 + $rgb_arr[2];
+    }
+    private function getParentInstanceId(int $instId): int
+    {
+        return IPS_GetInstance($instId)['ConnectionID'];
+    }
+
+    private function getHostFromIOInstance(): string
+    {
+        $url = IPS_GetProperty($this->getParentInstanceId($this->getParentInstanceId($this->InstanceID)), 'URL');
+        return parse_url($url, PHP_URL_HOST) ? : '';
+    }
+
+    private function getData($host, $path)
+    {
+        $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
+                                                                                                              'http' => ['timeout' => 2]
+                                                                                                          ]));
+        if ($jsonData === false) {
+            return [];
+        }
+
+        return json_decode($jsonData, true);
     }
 
 }

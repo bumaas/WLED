@@ -3,6 +3,12 @@
 class WLEDMaster extends IPSModule
 {
 
+    //Properties
+    private const PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
+    private const PROP_SHOWPRESETS = 'ShowPresets';
+    private const PROP_SHOWPLAYLIST = 'ShowPlaylist';
+
+    //Variables
     private const VAR_IDENT_POWER = 'VariablePower';
     private const VAR_IDENT_BRIGHTNESS = 'VariableBrightness';
     private const VAR_IDENT_TRANSITION = 'VariableTransition';
@@ -20,18 +26,21 @@ class WLEDMaster extends IPSModule
         $this->SendDebug(__FUNCTION__, '', 0);
 
         // Modul-Eigenschaftserstellung
-        $this->RegisterPropertyBoolean("ShowNightlight", false);
-        $this->RegisterPropertyBoolean("ShowPresets", false);
-        $this->RegisterPropertyBoolean("ShowPlaylist", false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOWNIGHTLIGHT, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOWPRESETS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOWPLAYLIST, false);
 
         $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
     public function ApplyChanges()
     {
-        $this->RegisterMessage(0, 10001 /* IPS_KERNELSTARTED */);
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
 
         $this->RegisterVariables();
 
@@ -50,17 +59,17 @@ class WLEDMaster extends IPSModule
         $this->EnableAction(self::VAR_IDENT_TRANSITION);
 
 
-        if($this->ReadPropertyBoolean("ShowPresets")) {
+        if($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS)) {
             $this->RegisterVariableInteger(self::VAR_IDENT_PRESET, "Presets ID", "", 30);
             $this->EnableAction(self::VAR_IDENT_PRESET);
         }
 
-        if($this->ReadPropertyBoolean("ShowPlaylist")) {
+        if($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST)) {
             $this->RegisterVariableInteger(self::VAR_IDENT_PLAYLIST, "Playlist ID", "", 35);
             $this->EnableAction(self::VAR_IDENT_PLAYLIST);
         }
 
-        if($this->ReadPropertyBoolean("ShowNightlight")){
+        if($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT)){
             $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, "Nightlight On", "~Switch", 50);
             $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_DURATION, "Nightlight Duration", "WLED.NightlightDuration", 51);
             $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, "Nightlight Mode", "WLED.NightlightMode", 52);
@@ -83,6 +92,16 @@ class WLEDMaster extends IPSModule
         @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  $jsonString)));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
+
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    {
+        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+
+        if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
+            $this->ApplyChanges();
+        }
+    }
+
     public function ReceiveData($JSONString)
     {
         $data = json_decode($JSONString);
@@ -100,15 +119,15 @@ class WLEDMaster extends IPSModule
             $this->SetValue(self::VAR_IDENT_TRANSITION, ($data["transition"] / 10));
         }
 
-        if($this->ReadPropertyBoolean("ShowPresets") && array_key_exists("ps", $data)) {
+        if($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS) && array_key_exists("ps", $data)) {
             $this->SetValue(self::VAR_IDENT_PRESET, $data["ps"]);
         }
 
-        if($this->ReadPropertyBoolean("ShowPlaylist") && array_key_exists("pl", $data)) {
+        if($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST) && array_key_exists("pl", $data)) {
             $this->SetValue(self::VAR_IDENT_PLAYLIST, $data["pl"]);
         }
 
-        if($this->ReadPropertyBoolean("ShowNightlight") && array_key_exists("nl", $data)) {
+        if($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT) && array_key_exists("nl", $data)) {
             if(array_key_exists("on", $data["nl"])){
                 $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_ON, $data["nl"]["on"]);
             }
