@@ -31,6 +31,7 @@ class WLEDMaster extends IPSModule
         $this->RegisterMessage(0, 10001 /* IPS_KERNELSTARTED */);
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
+        $this->SendDebug(__FUNCTION__, '', 0);
 
         $this->RegisterVariables();
 
@@ -77,7 +78,7 @@ class WLEDMaster extends IPSModule
     public function GetUpdate(){
         $this->SendData(json_encode(['v' => true]));
     }
-    public function SendData($jsonString)
+    public function SendData(string $jsonString)
     {
         @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  $jsonString)));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
@@ -220,7 +221,7 @@ class WLEDMaster extends IPSModule
      *
      * @return int $Format Ausgabeformat für Strings.
      */
-    protected function SendDebug($Message, $Data, $Format)
+    protected function SendDebug($Message, $Data, $Format): void
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
@@ -245,6 +246,7 @@ class WLEDMaster extends IPSModule
                 $this->LogMessage($Message . ':' . (string) $Data, KL_DEBUG);
             }
         }
+
     }
     private function HexToRGB($hexInt){
         $arr = array();

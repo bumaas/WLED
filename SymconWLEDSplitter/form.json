@@ -1,17 +1,6 @@
 {
     "elements":
     [
-        { "type": "CheckBox", "name": "Active", "caption": "Active" },
-        { "type": "ValidationTextBox", "name": "IPAddress", "caption": "Host" },
         { "type": "CheckBox", "name": "SyncPower", "caption": "Sync Power with Segments" }
-    ],
-    "actions":
-    [
-    ],
-    "status":
-    [
-        { "code": 104, "icon": "active", "caption": "Connection Lost!" },
-        { "code": 203, "icon": "error", "caption": "Internal Error!" }
-
     ]
 }

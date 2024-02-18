@@ -9,9 +9,5 @@
     [
         { "type": "Button", "label": "Status abrufen", "onClick": "WLEDMaster_GetUpdate($id);" },
         { "type": "TestCenter"}
-    ],
-    "status":
-    [
-        { "code": 203, "icon": "error", "caption": "Internal Error!" }
     ]
 }

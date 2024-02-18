@@ -11,10 +11,5 @@
     [
         { "type": "Button", "label": "Status abrufen", "onClick": "WLEDSegment_GetUpdate($id);" },
         { "type": "TestCenter"}
-    ],
-    "status":
-    [
-        { "code": 203, "icon": "error", "caption": "Internal Error!" }
-
     ]
 }

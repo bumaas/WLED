@@ -4,15 +4,6 @@ class WLEDSegment extends IPSModule
 {
     // Buffer sind immer String. Kovertierungen durch integer, float oder bool können Probleme verursachen.
     // Also wird mit serialize immer alles typensicher in einen String gewandelt.
-    protected function SetBuffer($Name, $Daten)
-    {
-        parent::SetBuffer($Name, serialize($Daten));
-    }
-    protected function GetBuffer($Name)
-    {
-        return unserialize(parent::GetBuffer($Name));
-    }
-
     public function Create()
     {
         parent::Create();
@@ -37,7 +28,6 @@ class WLEDSegment extends IPSModule
 
         $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*('.$this->ReadPropertyInteger("SegmentID").')[\\\”]*.*');
 
-        $this->SetBuffer("UpdateVariables", true);
         $this->GetUpdate();
         $this->SetStatus(IS_ACTIVE);
     }
@@ -45,123 +35,101 @@ class WLEDSegment extends IPSModule
     public function GetUpdate(){
         $this->SendData(json_encode(['v' => true]));
     }
-    public function SendData($jsonString)
+    public function SendData(string $jsonString)
     {
         @$this->SendDataToParent(json_encode(Array("DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" =>  $jsonString)));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
+
     public function ReceiveData($JSONString)
     {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
         $data = json_decode($data->Buffer, true);
 
-        //variablen anlegen, wenn diese fehlen
-        if($this->GetBuffer("UpdateVariables")){
-            $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
-            $this->RegisterVariableInteger("VariableBrightness", "Brightness", "~Intensity.255", 10);
-            $this->EnableAction("VariablePower");
-            $this->EnableAction("VariableBrightness");
+        $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
+        $this->RegisterVariableInteger("VariableBrightness", "Brightness", "~Intensity.255", 10);
+        $this->EnableAction("VariablePower");
+        $this->EnableAction("VariableBrightness");
 
-            $this->RegisterVariableInteger("VariableColor1", "Color", "~HexColor", 20);
-            $this->EnableAction("VariableColor1");
-            if($this->ReadPropertyBoolean("MoreColors")) {
-                $this->RegisterVariableInteger("VariableColor2", "Color 2", "~HexColor", 21);
-                $this->RegisterVariableInteger("VariableColor3", "Color 3", "~HexColor", 22);
-                $this->EnableAction("VariableColor2");
-                $this->EnableAction("VariableColor3");
-            }else{
-                @$this->DisableAction('VariableColor2');
-                @$this->DisableAction('VariableColor3');
-                $this->UnregisterVariable('VariableColor2');
-                $this->UnregisterVariable('VariableColor3');
-            }
-
-            if(count($data["col"][0]) > 3){ //weiskanal
-                $this->RegisterVariableInteger("VariableWhite", "White", "~Intensity.255", 23);
-                $this->EnableAction("VariableWhite");
-            }
-            if($this->ReadPropertyBoolean("ShowTemperature")) {
-                $this->RegisterVariableInteger("VariableTemperature", "Temperature", "WLED.Temperature", 24);
-                $this->EnableAction("VariableTemperature");
-            }else{
-                @$this->DisableAction('VariableTemperature');
-                $this->UnregisterVariable('VariableTemperature');
-            }
-
-            if($this->ReadPropertyBoolean("ShowEffects")){
-                $this->RegisterVariableInteger("VariableEffects", "Effects", "WLED.Effects", 50);
-                $this->RegisterVariableInteger("VariableEffectsSpeed", "Effect Speed", "~Intensity.255", 51);
-                $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 52);
-                $this->EnableAction("VariableEffects");
-                $this->EnableAction("VariableEffectsSpeed");
-                $this->EnableAction("VariableEffectsIntensity");
-            }else{
-                @$this->DisableAction('VariableEffects');
-                @$this->DisableAction('VariableEffectsSpeed');
-                @$this->DisableAction('VariableEffectsIntensity');
-                $this->UnregisterVariable('VariableEffects');
-                $this->UnregisterVariable('VariableEffectsSpeed');
-                $this->UnregisterVariable('VariableEffectsIntensity');
-            }
-
-            if($this->ReadPropertyBoolean("ShowPalettes")) {
-                $this->RegisterVariableInteger("VariablePalettes", "Palettes", "WLED.Palettes", 50);
-                $this->EnableAction("VariablePalettes");
-            }
-            else{
-                @$this->DisableAction('VariablePalettes');
-                $this->UnregisterVariable('VariablePalettes');
-            }
-
-            $this->SetBuffer("UpdateVariables", false);
+        $this->RegisterVariableInteger("VariableColor1", "Color", "~HexColor", 20);
+        $this->EnableAction("VariableColor1");
+        if ($this->ReadPropertyBoolean("MoreColors")) {
+            $this->RegisterVariableInteger("VariableColor2", "Color 2", "~HexColor", 21);
+            $this->RegisterVariableInteger("VariableColor3", "Color 3", "~HexColor", 22);
+            $this->EnableAction("VariableColor2");
+            $this->EnableAction("VariableColor3");
         }
+
+        if (count($data["col"][0]) > 3) { //weiskanal
+            $this->RegisterVariableInteger("VariableWhite", "White", "~Intensity.255", 23);
+            $this->EnableAction("VariableWhite");
+        }
+        if ($this->ReadPropertyBoolean("ShowTemperature")) {
+            $this->RegisterVariableInteger("VariableTemperature", "Temperature", "WLED.Temperature", 24);
+            $this->EnableAction("VariableTemperature");
+        }
+
+        if ($this->ReadPropertyBoolean("ShowEffects")) {
+            $this->RegisterVariableInteger("VariableEffects", "Effects", "WLED.Effects", 50);
+            $this->RegisterVariableInteger("VariableEffectsSpeed", "Effect Speed", "~Intensity.255", 51);
+            $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 52);
+            $this->EnableAction("VariableEffects");
+            $this->EnableAction("VariableEffectsSpeed");
+            $this->EnableAction("VariableEffectsIntensity");
+        }
+
+        if ($this->ReadPropertyBoolean("ShowPalettes")) {
+            $this->RegisterVariableInteger("VariablePalettes", "Palettes", "WLED.Palettes", 50);
+            $this->EnableAction("VariablePalettes");
+        }
+
 
         //daten verarbeiten!
-        if(array_key_exists("on", $data)){
+        if (array_key_exists("on", $data)) {
             $this->SetValue("VariablePower", $data["on"]);
         }
-        if(array_key_exists("bri", $data)){
+        if (array_key_exists("bri", $data)) {
             $this->SetValue("VariableBrightness", $data["bri"]);
         }
 
-        if(array_key_exists("col", $data)){
+        if (array_key_exists("col", $data)) {
             $this->SetValue("VariableColor1", $this->RGBToHex($data["col"][0]));
 
-            if($this->ReadPropertyBoolean("MoreColors")) {
+            if ($this->ReadPropertyBoolean("MoreColors")) {
                 $this->SetValue("VariableColor2", $this->RGBToHex($data["col"][1]));
                 $this->SetValue("VariableColor3", $this->RGBToHex($data["col"][2]));
             }
 
-            if(count($data["col"][0]) > 3) { //weiskanal
+            if (count($data["col"][0]) > 3) { //weiskanal
                 $this->SetValue("VariableWhite", $data["col"][0][3]);
             }
         }
 
-        if(array_key_exists("cct", $data)){
-            if($this->ReadPropertyBoolean("ShowTemperature")) {
+        if (array_key_exists("cct", $data)) {
+            if ($this->ReadPropertyBoolean("ShowTemperature")) {
                 $this->SetValue("VariableTemperature", $data["cct"]);
             }
         }
 
-        if(array_key_exists("pal", $data)){
-            if($this->ReadPropertyBoolean("ShowPalettes")) {
+        if (array_key_exists("pal", $data)) {
+            if ($this->ReadPropertyBoolean("ShowPalettes")) {
                 $this->SetValue("VariablePalettes", $data["pal"]);
             }
         }
 
-        if(array_key_exists("fx", $data)){
-            if($this->ReadPropertyBoolean("ShowEffects")) {
+        if (array_key_exists("fx", $data)) {
+            if ($this->ReadPropertyBoolean("ShowEffects")) {
                 $this->SetValue("VariableEffects", $data["fx"]);
             }
         }
-        if(array_key_exists("sx", $data)){
-            if($this->ReadPropertyBoolean("ShowEffects")) {
+        if (array_key_exists("sx", $data)) {
+            if ($this->ReadPropertyBoolean("ShowEffects")) {
                 $this->SetValue("VariableEffectsSpeed", $data["sx"]);
             }
         }
-        if(array_key_exists("ix", $data)){
-            if($this->ReadPropertyBoolean("ShowEffects")) {
+        if (array_key_exists("ix", $data)) {
+            if ($this->ReadPropertyBoolean("ShowEffects")) {
                 $this->SetValue("VariableEffectsIntensity", $data["ix"]);
             }
         }
@@ -269,7 +237,7 @@ class WLEDSegment extends IPSModule
      *
      * @return int $Format Ausgabeformat für Strings.
      */
-    protected function SendDebug($Message, $Data, $Format)
+    protected function SendDebug($Message, $Data, $Format): int
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
@@ -286,14 +254,16 @@ class WLEDSegment extends IPSModule
                 $this->SendDebug($Message . '->' . $Key, $DebugData, 0);
             }
         } elseif (is_bool($Data)) {
-            parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
+            return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
         } else {
             if (IPS_GetKernelRunlevel() == KR_READY) {
-                parent::SendDebug($Message, (string) $Data, $Format);
-            } else {
-                $this->LogMessage($Message . ':' . (string) $Data, KL_DEBUG);
+                return parent::SendDebug($Message, (string) $Data, $Format);
             }
+
+            $this->LogMessage($Message . ':' . (string) $Data, KL_DEBUG);
         }
+
+        return 0;
     }
     private function HexToRGB($hexInt){
         $arr = array();

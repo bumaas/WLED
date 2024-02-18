@@ -2,25 +2,12 @@
 
 class WLEDSplitter extends IPSModule
 {
-    // Buffer sind immer String. Kovertierungen durch integer, float oder bool können Probleme verursachen.
-    // Also wird mit serialize immer alles typensicher in einen String gewandelt.
-    protected function SetBuffer($Name, $Daten)
-    {
-        parent::SetBuffer($Name, serialize($Daten));
-    }
-    protected function GetBuffer($Name)
-    {
-        return unserialize(parent::GetBuffer($Name));
-    }
-
     public function Create()
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
 
         // Modul-Eigenschaftserstellung
-        $this->RegisterPropertyBoolean("Active", false);
-        $this->RegisterPropertyString("IPAddress", "192.168.178.1");
         $this->RegisterPropertyBoolean("SyncPower", true);
 
         $this->RequireParent("{D68FD31F-0E90-7019-F16C-1949BD3079EF}");
@@ -28,56 +15,55 @@ class WLEDSplitter extends IPSModule
 
     public function ApplyChanges()
     {
-        $this->RegisterMessage(0, 10001 /* IPS_KERNELSTARTED */);
+        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
-
-        if (IPS_GetKernelRunlevel() == 10103 /* KR_READY */) {
-            $this->UpdateConfigurationForParent();
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
         }
 
-        if(Sys_Ping($this->ReadPropertyString("IPAddress"), 3000)){
-            if(!IPS_VariableProfileExists("WLED.Effects")){
-                IPS_CreateVariableProfile("WLED.Effects", 1);
 
-                $eff_arr = json_decode(file_get_contents("http://".$this->ReadPropertyString("IPAddress")."/json/eff"), true);
-
-                foreach ($eff_arr as $item => $key) {
-                    IPS_SetVariableProfileAssociation("WLED.Effects", $item, $key, "", -1);
-                }
-            }
-
-            if(!IPS_VariableProfileExists("WLED.Palettes")){
-                IPS_CreateVariableProfile("WLED.Palettes", 1);
-
-                $eff_arr = json_decode(file_get_contents("http://".$this->ReadPropertyString("IPAddress")."/json/pal"), true);
-
-                foreach ($eff_arr as $item => $key) {
-                    IPS_SetVariableProfileAssociation("WLED.Palettes", $item, $key, "", -1);
-                }
-            }
+        if (!IPS_VariableProfileExists("WLED.Effects")) {
+            IPS_CreateVariableProfile("WLED.Effects", VARIABLETYPE_INTEGER);
         }
 
-        if(!IPS_VariableProfileExists("WLED.Temperature")){
-            IPS_CreateVariableProfile("WLED.Temperature", 1);
+        if (!IPS_VariableProfileExists("WLED.Palettes")) {
+            IPS_CreateVariableProfile("WLED.Palettes", VARIABLETYPE_INTEGER);
+        }
+
+        $host = $this->getHostFromParentInstance();
+        $this->SetSummary($host);
+        if (!empty($host) && Sys_Ping($host, 300)) {
+            $wledEffects = "WLED.Effects";
+            $wledPalettes = "WLED.Palettes";
+
+            $wledEffectsArray = $this->getJsonData($host, "/json/eff");
+            $this->updateAssociations($wledEffectsArray, $wledEffects);
+
+            $wledPaletteArray = $this->getJsonData($host, "/json/pal");
+            $this->updateAssociations($wledPaletteArray, $wledPalettes);
+        }
+
+        if (!IPS_VariableProfileExists("WLED.Temperature")) {
+            IPS_CreateVariableProfile("WLED.Temperature", VARIABLETYPE_INTEGER);
             IPS_SetVariableProfileValues("WLED.Temperature", 1900, 10091, 1);
         }
 
-        if(!IPS_VariableProfileExists("WLED.Transition")){
-            IPS_CreateVariableProfile("WLED.Transition", 2);
+        if (!IPS_VariableProfileExists("WLED.Transition")) {
+            IPS_CreateVariableProfile("WLED.Transition", VARIABLETYPE_FLOAT);
             IPS_SetVariableProfileValues("WLED.Transition", 0.0, 25.5, 0.1);
             IPS_SetVariableProfileDigits("WLED.Transition", 1);
-            IPS_SetVariableProfileText ("WLED.Transition", "", " Sek.");
+            IPS_SetVariableProfileText("WLED.Transition", "", " s");
         }
 
-        if(!IPS_VariableProfileExists("WLED.NightlightDuration")){
+        if (!IPS_VariableProfileExists("WLED.NightlightDuration")) {
             IPS_CreateVariableProfile("WLED.NightlightDuration", 1);
             IPS_SetVariableProfileValues("WLED.NightlightDuration", 1, 255, 1);
-            IPS_SetVariableProfileText ("WLED.NightlightDuration", "", " Min.");
+            IPS_SetVariableProfileText("WLED.NightlightDuration", "", " Min.");
         }
 
-        if(!IPS_VariableProfileExists("WLED.NightlightMode")){
+        if (!IPS_VariableProfileExists("WLED.NightlightMode")) {
             IPS_CreateVariableProfile("WLED.NightlightMode", 1);
             IPS_SetVariableProfileValues("WLED.NightlightMode", 0, 3, 1);
 
@@ -90,7 +76,46 @@ class WLEDSplitter extends IPSModule
         $this->SetStatus(IS_ACTIVE);
     }
 
-    public function SendData($jsonString)
+    private function getParentInstanceId(): int
+    {
+        return IPS_GetInstance($this->InstanceID)['ConnectionID'];
+    }
+
+    private function getHostFromParentInstance(): string
+    {
+        $url = IPS_GetProperty($this->getParentInstanceId(), 'URL');
+        return parse_url($url, PHP_URL_HOST) ?: '';
+    }
+    private function getJsonData($ipAddress, $path) {
+        $jsonData = @file_get_contents('http://{$ipAddress}{$path}', false, stream_context_create([
+                                                                                                      'http' => ['timeout' => 2]]                                                                                                      )
+                                                                                                  );
+        if ($jsonData === false){
+            return [];
+        }
+
+        return json_decode($jsonData, true);
+    }
+
+    private function updateAssociations($dataArray, $profile) {
+        // Deleting old associations
+        foreach (IPS_GetVariableProfile($profile)['Associations'] as $association) {
+            IPS_SetVariableProfileAssociation($profile, $association['Value'], '', '', -1);
+        }
+        // Updating with new associations
+        $i = 1;
+        foreach ($dataArray as $item => $key) {
+            if ($i > 128){
+                array_splice($dataArray, 0, 128);
+                $this->SendDebug(__FUNCTION__, 'Das Maximum von 128 Profilen wurde überschritten. Folgende Assoziationen wurden nicht angelegt: ' . implode(', ', $dataArray), 0);
+                break;
+            }
+            IPS_SetVariableProfileAssociation($profile, $item, $key, "", -1);
+            $i++;
+        }
+    }
+
+    public function SendData(string $jsonString)
     {
         $this->SendDataToParent(json_encode(Array("DataID" => "{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}", "FrameTyp" => 1, "Fin" => true, "Buffer" => utf8_decode($jsonString))));
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
@@ -106,13 +131,18 @@ class WLEDSplitter extends IPSModule
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    {
+        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
+
+        if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
+            $this->ApplyChanges();
+        }
+    }
     public function ReceiveData($JSONString)
     {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
-
-        //sicher, falls ein Modul die aktuellen daten anfordert.
-        $this->SetBuffer("Buffer", $data->Buffer);
 
         $j_data = json_decode($data->Buffer, true);
 
@@ -124,79 +154,45 @@ class WLEDSplitter extends IPSModule
 
         $powerOn = false;
 
-        foreach($j_data["state"]["seg"] as $item){
-            if($this->ReadPropertyBoolean("SyncPower")){
-                if($j_data["state"]["on"] == false){
-                    //alle segmente ausschalten wenn wled ausgeschalten wird!
+        if ($this->ReadPropertyBoolean("SyncPower")) {
+            foreach ($j_data["state"]["seg"] as $item) {
+                if ($j_data["state"]["on"] === false) {
+                    //alle segmente ausschalten, wenn wled ausgeschalten wird!
                     $item["on"] = false;
-                    $this->SendDebug(__FUNCTION__,"alles segmente ausschalten", 0);
+                    $this->SendDebug(__FUNCTION__, 'Turn off all segments', 0);
+                }
+
+                $this->SendDataToSegment(json_encode($item));
+
+                if ($item["on"] === true) {
+                    $powerOn = true;
                 }
             }
 
-            $this->SendDataToSegment(json_encode($item));
-
-            if($item["on"] == true) $powerOn = true;
-        }
-
-        //prüfen ob alle Segmente ausgeschalten wurden!
-        if($this->ReadPropertyBoolean("SyncPower")){
+            //prüfen, ob alle Segmente ausgeschalten wurden!
             if($j_data["state"]["on"] && $powerOn == false){
                 $this->SendData('{"on":false}');
             }
+
         }
+
     }
 
-    public function ForwardData($JSONString) {
+    public function ForwardData($JSONString)
+    {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
         $data = json_decode($data->Buffer, true);
 
-        if(array_key_exists("cmd", $data)) {
-            switch (strtolower($data["cmd"])){
-                case "update":
-                    $this->SendData('{}');
-                    break;
-                default:
-                    throw new Exception("CMD NOT SET!");
+        if (array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0) {
+            if ($data["seg"][0]["on"] === true) {
+                // wenn segment eingeschalten wird wled mit einschalten
+                //$data["state"]["on"] = true;
+                $this->SendData('{"on":true}');
             }
-        }else{
-            //alles weiterleiten wenn kein CMD gesetzt!
-            if(array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0){
-                if($data["seg"][0]["on"] == true){
-                    // wenn segment eingeschalten wird wled mit einschalten
-                    //$data["state"]["on"] = true;
-                    $this->SendData('{"on":true}');
-                }
-            }
-
-            $this->SendData(json_encode($data));
         }
-    }
 
-    public function GetConfigurationForParent()
-    {
-        $this->SendDebug(__FUNCTION__, '', 0);
-        $ipAdress = $this->ReadPropertyString("IPAddress");
-        $active = $this->ReadPropertyBoolean("Active");
-        $address = "ws://" . $ipAdress . "/ws";
-
-        $Config = array(
-            "Active"         => $active,
-            "URL"          => $address //,
-            //"VerifyCertificate"     => $VerifyCertificate
-        );
-
-        return json_encode($Config);
-    }
-
-    Private function UpdateConfigurationForParent()
-    {
-        $this->SendDebug(__FUNCTION__, '', 0);
-        $ParentId = @IPS_GetInstance($this->InstanceID)['ConnectionID'];
-        $this->SendDebug("Force Update Websocket", $ParentId, 0);
-        $Script = 'IPS_SetConfiguration(' . $ParentId . ', \'' . $this->GetConfigurationForParent() . '\');' . PHP_EOL;
-        $Script .= 'IPS_ApplyChanges(' . $ParentId . ');';
-        IPS_RunScriptText($Script);
+        $this->SendData(json_encode($data));
     }
 
     /**
@@ -207,7 +203,7 @@ class WLEDSplitter extends IPSModule
      *
      * @return int $Format Ausgabeformat für Strings.
      */
-    protected function SendDebug($Message, $Data, $Format)
+    protected function SendDebug($Message, $Data, $Format): void
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
