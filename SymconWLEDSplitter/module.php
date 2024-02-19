@@ -66,14 +66,14 @@ class WLEDSplitter extends IPSModule
         }
 
         if (!IPS_VariableProfileExists("WLED.NightlightDuration")) {
-            IPS_CreateVariableProfile("WLED.NightlightDuration", 1);
+            IPS_CreateVariableProfile("WLED.NightlightDuration", VARIABLETYPE_INTEGER);
             IPS_SetVariableProfileValues("WLED.NightlightDuration", 1, 255, 1);
             IPS_SetVariableProfileText("WLED.NightlightDuration", "", " Min.");
         }
 
         if (!IPS_VariableProfileExists("WLED.NightlightMode")) {
-            IPS_CreateVariableProfile("WLED.NightlightMode", 1);
-            IPS_SetVariableProfileValues("WLED.NightlightMode", 0, 3, 1);
+            IPS_CreateVariableProfile("WLED.NightlightMode", VARIABLETYPE_INTEGER);
+            IPS_SetVariableProfileValues("WLED.NightlightMode", 0, 0, 0);
 
             IPS_SetVariableProfileAssociation("WLED.NightlightMode", 0, "instant", "", -1);
             IPS_SetVariableProfileAssociation("WLED.NightlightMode", 1, "fade", "", -1);
