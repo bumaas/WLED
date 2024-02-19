@@ -6,8 +6,9 @@ class WLEDSegment extends IPSModule
     private const PROP_MORE_COLORS = 'MoreColors';
     private const PROP_SHOW_TEMPERATURE = 'ShowTemperature';
     private const PROP_SHOW_EFFECTS = 'ShowEffects';
-    private const PROP_SHOW_PALETTS = 'ShowPalettes';
+    private const PROP_SHOW_PALLETS = 'ShowPalettes';
 
+    //Attributes
     private const ATTR_DEVICE_INFO = 'DeviceInfo';
 
     public function Create()
@@ -20,9 +21,9 @@ class WLEDSegment extends IPSModule
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_TEMPERATURE, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_EFFECTS, false);
-        $this->RegisterPropertyBoolean(self::PROP_SHOW_PALETTS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_PALLETS, false);
 
-        $this->RegisterAttributeString('DeviceInfo', json_encode([]));
+        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([]));
 
         $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
@@ -74,7 +75,7 @@ class WLEDSegment extends IPSModule
             $this->EnableAction("VariableTemperature");
         }
 
-        if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)){
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)){
             $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
             $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo)), 0);
             $wledEffects = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
@@ -89,7 +90,7 @@ class WLEDSegment extends IPSModule
                 $this->EnableAction("VariableEffectsIntensity");
             }
 
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
                 $this->RegisterVariableInteger("VariablePalettes", "Palettes", $wledPalettes, 50);
                 $this->EnableAction("VariablePalettes");
             }
@@ -150,7 +151,7 @@ class WLEDSegment extends IPSModule
         }
 
         if (array_key_exists("pal", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTS)) {
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
                 $this->SetValue("VariablePalettes", $data["pal"]);
             }
         }

@@ -6,13 +6,15 @@ class WLEDSplitter extends IPSModule
     private const MODID_WLED_SEGMENT = '{D2353839-DA64-DF79-7CD5-4DD827DCE82A}';
     private const MODID_WLED_MASTER  = '{79D5ACD0-7EED-FBA6-22D7-04AEB1BBBE97}';
 
+    private const PROP_SYNCPOWER = 'SyncPower';
+
     public function Create()
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
 
         // Modul-Eigenschaftserstellung
-        $this->RegisterPropertyBoolean("SyncPower", true);
+        $this->RegisterPropertyBoolean(self::PROP_SYNCPOWER, true);
 
         $this->RequireParent("{D68FD31F-0E90-7019-F16C-1949BD3079EF}");
     }
@@ -82,6 +84,69 @@ class WLEDSplitter extends IPSModule
         $this->SetStatus(IS_ACTIVE);
     }
 
+    public function RequestAction($Ident, $Value)
+    {
+        $this->SendDebug(__FUNCTION__, sprintf('Ident: %s, Value: %s', $Ident, $Value), 0);
+        switch ($Ident) {
+            case 'updateProfileEffects':
+            case 'updateProfilePallets':
+            case 'updateProfilePresets':
+            case 'updateProfilePlaylists':
+                $this->processProfileUpdate($Ident);
+                break;
+            default:
+                trigger_error('unknown ident: ' . $Ident);
+        }
+    }
+
+    private function processProfileUpdate($profileType)
+    {
+        $host = $this->getHostFromParentInstance();
+        if (empty($host) || !Sys_Ping($host, 300)) {
+            return;
+        }
+
+        $mac         = $this->getData($host, '/json/info')['mac'];
+        $profileName = $this->getProfileName($profileType, $mac);
+
+        if (!IPS_VariableProfileExists($profileName)) {
+            IPS_CreateVariableProfile($profileName, VARIABLETYPE_INTEGER);
+        }
+
+        $profileData = $this->fetchProfileData($host, $profileType);
+
+        if ($profileData) {
+            $this->updateAssociations($profileName, $profileData);
+        }
+    }
+
+    private function getProfileName($type, $mac)
+    {
+        return sprintf('WLED.%s.%s', str_replace('updateProfile', '', $type), substr($mac, -4));
+    }
+
+    private function fetchProfileData($host, $profileType)
+    {
+        switch ($profileType) {
+            case 'updateProfileEffects':
+                return $this->getData($host, "/json/eff");
+            case 'updateProfilePallets':
+                return $this->getData($host, "/json/pal");
+            case 'updateProfilePresets':
+            case 'updateProfilePlaylists':
+                $presets = $this->getData($host, '/presets.json');
+                $data[-1]    = '-not active-';
+                foreach ($presets as $key => $preset) {
+                    if (isset($preset['n'], $preset[($profileType === 'updateProfilePresets' ? 'mainseg' : 'playlist')])) {
+                        $data[$key] = $preset['n'];
+                    }
+                }
+                return $data;
+            default:
+                return null;
+        }
+    }
+
     private function getParentInstanceId(int $instId): int
     {
         return IPS_GetInstance($instId)['ConnectionID'];
@@ -96,7 +161,7 @@ class WLEDSplitter extends IPSModule
     private function getData($host, $path)
     {
         $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
-                                                                                                              'http' => ['timeout' => 2]
+                                                                                                              'http' => ['timeout' => 1]
                                                                                                           ]));
         if ($jsonData === false) {
             return [];
@@ -105,10 +170,9 @@ class WLEDSplitter extends IPSModule
         return json_decode($jsonData, true);
     }
 
-    private function updateAssociations($profileName, $dataArray)
+    private function updateAssociations(string $profileName, array $dataArray)
     {
-
-        $this->SendDebug(__FUNCTION__, sprintf('profile: %s', $profileName), 0);
+        $this->SendDebug(__FUNCTION__, sprintf('profile: %s, %s', $profileName, print_r($dataArray, true)), 0);
         // Deleting old associations
         foreach (IPS_GetVariableProfile($profileName)['Associations'] as $association) {
             IPS_SetVariableProfileAssociation($profileName, $association['Value'], '', '', -1);
@@ -128,7 +192,7 @@ class WLEDSplitter extends IPSModule
                 );
                 break;
             }
-            IPS_SetVariableProfileAssociation($profileName, $key, $name, "", -1);
+            IPS_SetVariableProfileAssociation($profileName, $key, $name, '', -1);
             $i++;
         }
     }
@@ -173,31 +237,36 @@ class WLEDSplitter extends IPSModule
 
         $state = $jsonData['state'];
 
+        //nachricht zum Master schicken
         $this->SendDataToMaster(json_encode($state));
 
+        //nachricht an die Segmente schicken
+        if (!isset($state['seg']) || !is_array($state['seg'])) {
+            return;
+        }
 
-        if ($this->ReadPropertyBoolean("SyncPower")) {
-            if (!isset($state['seg']) || !is_array($state['seg'])) {
-                return;
-            }
-            $powerOn = false;
-            foreach ($jsonData["state"]["seg"] as $segmentData) {
-                if ($jsonData["state"]["on"] === false) {
-                    //alle segmente ausschalten, wenn wled ausgeschalten wird!
+        $powerOn = false;
+
+        foreach ($state["seg"] as $segmentData) {
+            if ($this->ReadPropertyBoolean("SyncPower")) {
+                if ($state["on"] === false) {
+                    //alle Segmente ausschalten, wenn wled ausgeschalten wird!
                     $segmentData["on"] = false;
                     $this->SendDebug(__FUNCTION__, 'Turn off all segments', 0);
                 }
-
-                $this->SendDataToSegment(json_encode($segmentData));
-
-                if ($segmentData["on"] === true) {
-                    $powerOn = true;
-                }
             }
 
-            //prüfen, ob alle Segmente ausgeschalten wurden!
+            $this->SendDataToSegment(json_encode($segmentData));
+
+            if ($segmentData["on"] === true) {
+                $powerOn = true;
+            }
+        }
+
+        //prüfen, ob alle Segmente ausgeschalten wurden!
+        if ($this->ReadPropertyBoolean("SyncPower")) {
             if ($state["on"] && $powerOn === false) {
-                $this->SendData('{"on":false}');
+                $this->SendData('{"on":false}'); //an den Parent schicken
             }
         }
     }
@@ -209,8 +278,8 @@ class WLEDSplitter extends IPSModule
         $data = json_decode($data['Buffer'], true);
 
         if (array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0 && $data["seg"][0]["on"] === true) {
-            // wenn segment eingeschalten wird wled mit einschalten
-            $this->SendData('{"on":true}');
+            // wenn segment eingeschaltet wird, dann wled mit einschalten
+            //$this->SendData('{"on":true}'); //todo: Temporär auskommentiert da die app das nicht so macht. eventuell als Option verfügbar machen
         }
 
         $this->SendData(json_encode($data));
