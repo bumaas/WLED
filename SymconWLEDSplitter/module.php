@@ -56,6 +56,7 @@ class WLEDSplitter extends IPSModule
         if (!IPS_VariableProfileExists("WLED.Temperature")) {
             IPS_CreateVariableProfile("WLED.Temperature", VARIABLETYPE_INTEGER);
             IPS_SetVariableProfileValues("WLED.Temperature", 1900, 10091, 1);
+            IPS_SetVariableProfileText("WLED.Temperature", "", " %");
         }
 
         if (!IPS_VariableProfileExists("WLED.Transition")) {
@@ -279,7 +280,7 @@ class WLEDSplitter extends IPSModule
 
         if (array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0 && $data["seg"][0]["on"] === true) {
             // wenn segment eingeschaltet wird, dann wled mit einschalten
-            //$this->SendData('{"on":true}'); //todo: Temporär auskommentiert da die app das nicht so macht. eventuell als Option verfügbar machen
+            //$this->SendData('{"on":true}'); //todo: auskommentiert da die app das nicht so macht. eventuell als Option verfügbar machen
         }
 
         $this->SendData(json_encode($data));
