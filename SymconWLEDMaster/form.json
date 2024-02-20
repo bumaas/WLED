@@ -1,13 +1,14 @@
 {
     "elements":
     [
-        { "type": "CheckBox", "name": "ShowPresets", "caption": "Show Presets" },
-        { "type": "CheckBox", "name": "ShowPlaylist", "caption": "Show Playlist" },
-        { "type": "CheckBox", "name": "ShowNightlight", "caption": "Show Nightlight" }
+        { "type": "Label", "caption": "The following variables are optional:" },
+        { "type": "CheckBox", "name": "ShowPresets", "caption": "Presets" },
+        { "type": "CheckBox", "name": "ShowPlaylist", "caption": "Playlist" },
+        { "type": "CheckBox", "name": "ShowNightlight", "caption": "Nightlight" }
     ],
     "actions":
     [
-        { "type": "Button", "label": "Status abrufen", "onClick": "WLEDMaster_GetUpdate($id);" },
+        { "type": "Button", "label": "Update State", "onClick": "WLEDMaster_GetUpdate($id);" },
         { "type": "TestCenter"}
     ]
 }

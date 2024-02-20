@@ -2,6 +2,8 @@
 
 class WLEDSegment extends IPSModule
 {
+    private const MODID_WLED_SPLITTER    = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
+
     private const PROP_SEGMENT_ID       = 'SegmentID';
     private const PROP_MORE_COLORS      = 'MoreColors';
     private const PROP_SHOW_CCT         = 'ShowTemperature';
@@ -43,7 +45,7 @@ class WLEDSegment extends IPSModule
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([]));
 
-        $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
+        $this->ConnectParent(self::MODID_WLED_SPLITTER);
     }
 
     public function ApplyChanges()
@@ -73,12 +75,12 @@ class WLEDSegment extends IPSModule
 
     private function RegisterVariables()
     {
-        $this->RegisterVariableBoolean("VariablePower", "Power", "~Switch", 0);
+        $this->RegisterVariableBoolean("VariablePower", $this->translate("Power"), "~Switch", 0);
         $this->EnableAction("VariablePower");
-        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, "Brightness", "~Intensity.255", 10);
+        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_CCT)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, "CCT", "WLED.Temperature", 11);
+            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, $this->translate("CCT"), "WLED.Temperature", 11);
             $this->EnableAction(self::VAR_IDENT_TEMPERATURE);
         }
 
@@ -86,49 +88,49 @@ class WLEDSegment extends IPSModule
             $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
             $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo)), 0);
             $wledEffects  = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
-            $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
+            $wledPalletes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->RegisterVariableInteger("VariableEffects", "Effects", $wledEffects, 20);
-                $this->RegisterVariableInteger(self::VAR_IDENT_EFFECTS_SPEED, "Effect Speed", "~Intensity.255", 21);
-                $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 22);
+                $this->RegisterVariableInteger("VariableEffects", $this->translate("Effects"), $wledEffects, 20);
+                $this->RegisterVariableInteger(self::VAR_IDENT_EFFECTS_SPEED, $this->translate("Effect Speed"), "~Intensity.255", 21);
+                $this->RegisterVariableInteger("VariableEffectsIntensity", $this->translate("Effect Intensity"), "~Intensity.255", 22);
                 $this->EnableAction("VariableEffects");
                 $this->EnableAction(self::VAR_IDENT_EFFECTS_SPEED);
                 $this->EnableAction("VariableEffectsIntensity");
             }
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
-                $this->RegisterVariableInteger("VariablePalettes", "Palettes", $wledPalettes, 23);
+                $this->RegisterVariableInteger("VariablePalettes", $this->translate("Palletes"), $wledPalletes, 23);
                 $this->EnableAction("VariablePalettes");
             }
         }
 
-        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, "Color 1", "~HexColor", 30);
+        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, $this->translate("Color 1"), "~HexColor", 30);
         $this->EnableAction(self::VAR_IDENT_COLOR1);
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE1, "White 1", "~Intensity.255", 31);
+            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE1, $this->translate("White 1"), "~Intensity.255", 31);
             $this->EnableAction(self::VAR_IDENT_WHITE1);
         }
-        $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR1, "Tunable White Color 1", "~TWColor", 32);
+        $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR1, $this->translate("White Tone Control 1"), "~TWColor", 32);
         $this->EnableAction(self::VAR_IDENT_TWCOLOR1);
 
         if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, "Color 2", "~HexColor", 35);
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, $this->translate("Color 2"), "~HexColor", 35);
             $this->EnableAction(self::VAR_IDENT_COLOR2);
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE2, "White 2", "~Intensity.255", 36);
+                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE2, $this->translate("White 2"), "~Intensity.255", 36);
                 $this->EnableAction(self::VAR_IDENT_WHITE2);
             }
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR2, "Tunable White Color 2", "~TWColor", 37);
+            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR2, $this->translate("White Tone Control 2"), "~TWColor", 37);
             $this->EnableAction(self::VAR_IDENT_TWCOLOR2);
 
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, "Color 3", "~HexColor", 40);
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, $this->translate("Color 3"), "~HexColor", 40);
             $this->EnableAction(self::VAR_IDENT_COLOR3);
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE3, "White 3", "~Intensity.255", 41);
+                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE3, $this->translate("White 3"), "~Intensity.255", 41);
                 $this->EnableAction(self::VAR_IDENT_WHITE3);
             }
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR3, "Tunable White Color 3", "~TWColor", 42);
+            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR3, $this->translate("White Tone Control 3"), "~TWColor", 42);
             $this->EnableAction(self::VAR_IDENT_TWCOLOR3);
         }
     }

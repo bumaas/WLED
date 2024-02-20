@@ -1,7 +1,14 @@
 {
   "translations": {
     "de": {
-      "Sync Power with Segments": "Synchronisiere die Power mit den Segmenten"
+      "Sync Power with Segments": "Synchronisiere den Einschaltzustand des Masters mit den Segmenten",
+      "Update profile WLED.Presets": "Lese die Presets neu ein",
+      "Update profile WLED.Playlists": "Lese die Playlisten neu ein",
+      "Update profile WLED.Effects": "Lese die Effekte neu ein",
+      "Update profile WLED.Pallets": "Lese die Paletten neu ein",
+      "-not active-": "-nicht aktiv-",
+      "The maximum of 128 profiles has been exceeded. The following associations were not created: ":  "Das Maximum von 128 Profilen wurde überschritten. Folgende Assoziationen wurden nicht angelegt: ",
+      "Turn off all segments": "Schalte alle Segmente aus"
     }
   }
 }

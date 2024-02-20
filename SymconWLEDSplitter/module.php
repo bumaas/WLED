@@ -136,7 +136,7 @@ class WLEDSplitter extends IPSModule
             case 'updateProfilePresets':
             case 'updateProfilePlaylists':
                 $presets = $this->getData($host, '/presets.json');
-                $data[-1]    = '-not active-';
+                $data[-1]    = $this->translate('-not active-');
                 foreach ($presets as $key => $preset) {
                     if (isset($preset['n'], $preset[($profileType === 'updateProfilePresets' ? 'mainseg' : 'playlist')])) {
                         $data[$key] = $preset['n'];

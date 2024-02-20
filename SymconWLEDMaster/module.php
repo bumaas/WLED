@@ -65,19 +65,19 @@ class WLEDMaster extends IPSModule
 
     private function RegisterVariables()
     {
-        $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, "Power", "~Switch", 0);
-        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, "Brightness", "~Intensity.255", 10);
+        $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, $this->translate("Power"), "~Switch", 0);
+        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
         $this->EnableAction(self::VAR_IDENT_POWER);
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
 
-        $this->RegisterVariableFloat(self::VAR_IDENT_TRANSITION, "Transition", "WLED.Transition", 20);
+        $this->RegisterVariableFloat(self::VAR_IDENT_TRANSITION, $this->translate("Transition"), "WLED.Transition", 20);
         $this->EnableAction(self::VAR_IDENT_TRANSITION);
 
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS)) {
             $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
             $wledPresets = isset($deviceInfo['mac']) ? 'WLED.Presets.' . substr($deviceInfo['mac'], -4) : '';
-            $this->RegisterVariableInteger(self::VAR_IDENT_PRESET, 'Presets', IPS_VariableProfileExists($wledPresets) ? $wledPresets : '', 30);
+            $this->RegisterVariableInteger(self::VAR_IDENT_PRESET, $this->translate('Presets'), IPS_VariableProfileExists($wledPresets) ? $wledPresets : '', 30);
             $this->EnableAction(self::VAR_IDENT_PRESET);
         }
 
@@ -86,7 +86,7 @@ class WLEDMaster extends IPSModule
             $wledPlaylists = isset($deviceInfo['mac']) ? 'WLED.Playlists.' . substr($deviceInfo['mac'], -4) : '';
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_PLAYLIST,
-                'Playlists ID',
+                $this->translate('Playlist'),
                 IPS_VariableProfileExists($wledPlaylists) ? $wledPlaylists : '',
                 35
             );
@@ -94,17 +94,17 @@ class WLEDMaster extends IPSModule
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT)) {
-            $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, "Nightlight On", "~Switch", 50);
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_DURATION, "Nightlight Duration", "WLED.NightlightDuration", 51);
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, "Nightlight Mode", "WLED.NightlightMode", 52);
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, "Nightlight Target Brightness", "~Intensity.255", 53);
+            $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, $this->translate("Nightlight On"), "~Switch", 50);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_DURATION, $this->translate("Nightlight Duration"), "WLED.NightlightDuration", 51);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, $this->translate("Nightlight Mode"), "WLED.NightlightMode", 52);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, $this->translate("Nightlight Target Brightness"), "~Intensity.255", 53);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_ON);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_DURATION);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_MODE);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS);
 
             //restdauer
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, "Remaining Nightlight Duration", "~UnixTimestampTime", 54);
+            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $this->translate("Remaining Nightlight Duration"), "~UnixTimestampTime", 54);
         }
     }
 

@@ -1,12 +1,13 @@
 {
     "elements":
     [
-        { "type": "NumberSpinner", "name": "SegmentID", "caption": "SegmentID" },
-        { "type": "CheckBox", "name": "ShowEffects", "caption": "Show Effects" },
-        { "type": "CheckBox", "name": "ShowPalettes", "caption": "Show Palettes" },
-        { "type": "CheckBox", "name": "ShowWhiteColor", "caption": "Show White Color" },
-        { "type": "CheckBox", "name": "MoreColors", "caption": "More Colors (2 + 3)" },
-        { "type": "CheckBox", "name": "ShowTemperature", "caption": "Show CCT" }
+        { "type": "NumberSpinner", "name": "SegmentID", "caption": "Segment ID" },
+        { "type": "Label", "caption": "The following variables are optional:" },
+        { "type": "CheckBox", "name": "ShowEffects", "caption": "Effects" },
+        { "type": "CheckBox", "name": "ShowPalettes", "caption": "Palettes" },
+        { "type": "CheckBox", "name": "ShowChannelWhite", "caption": "Channel White" },
+        { "type": "CheckBox", "name": "MoreColors", "caption": "Colors (2 + 3)" },
+        { "type": "CheckBox", "name": "ShowTemperature", "caption": "CCT" }
     ],
     "actions":
     [
