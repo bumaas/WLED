@@ -2,10 +2,11 @@
     "elements":
     [
         { "type": "NumberSpinner", "name": "SegmentID", "caption": "SegmentID" },
-        { "type": "CheckBox", "name": "MoreColors", "caption": "More Colors" },
-        { "type": "CheckBox", "name": "ShowTemperature", "caption": "Show Temperature" },
         { "type": "CheckBox", "name": "ShowEffects", "caption": "Show Effects" },
-        { "type": "CheckBox", "name": "ShowPalettes", "caption": "Show Palettes" }
+        { "type": "CheckBox", "name": "ShowPalettes", "caption": "Show Palettes" },
+        { "type": "CheckBox", "name": "ShowWhiteColor", "caption": "Show White Color" },
+        { "type": "CheckBox", "name": "MoreColors", "caption": "More Colors (2 + 3)" },
+        { "type": "CheckBox", "name": "ShowTemperature", "caption": "Show CCT" }
     ],
     "actions":
     [

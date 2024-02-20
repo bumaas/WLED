@@ -4,22 +4,25 @@ class WLEDSegment extends IPSModule
 {
     private const PROP_SEGMENT_ID       = 'SegmentID';
     private const PROP_MORE_COLORS      = 'MoreColors';
-    private const PROP_SHOW_TEMPERATURE = 'ShowTemperature';
+    private const PROP_SHOW_CCT         = 'ShowTemperature';
     private const PROP_SHOW_EFFECTS     = 'ShowEffects';
     private const PROP_SHOW_PALLETS     = 'ShowPalettes';
+    private const PROP_SHOW_WHITE_COLOR = 'ShowWhiteColor';
 
     //Variables
-    private const VAR_IDENT_BRIGHTNESS  = "VariableBrightness";
-    private const VAR_IDENT_TEMPERATURE = 'VariableTemperature';
-    private const VAR_IDENT_COLOR1      = 'VariableColor1';
-    private const VAR_IDENT_COLOR2      = 'VariableColor2';
-    private const VAR_IDENT_COLOR3      = 'VariableColor3';
-    private const VAR_IDENT_WHITE1      = 'VariableWhite';
-    private const VAR_IDENT_WHITE2      = 'VariableWhite2';
-    private const VAR_IDENT_WHITE3      = 'VariableWhite3';
-    private const VAR_IDENT_TWCOLOR1    = 'VariableTWColor1';
-    private const VAR_IDENT_TWCOLOR2    = 'VariableTWColor2';
-    private const VAR_IDENT_TWCOLOR3    = 'VariableTWColor3';
+    private const VAR_IDENT_BRIGHTNESS    = "VariableBrightness";
+    private const VAR_IDENT_TEMPERATURE   = 'VariableTemperature';
+    private const VAR_IDENT_EFFECTS_SPEED = 'VariableEffectsSpeed';
+
+    private const VAR_IDENT_COLOR1   = 'VariableColor1';
+    private const VAR_IDENT_COLOR2   = 'VariableColor2';
+    private const VAR_IDENT_COLOR3   = 'VariableColor3';
+    private const VAR_IDENT_WHITE1   = 'VariableWhite';
+    private const VAR_IDENT_WHITE2   = 'VariableWhite2';
+    private const VAR_IDENT_WHITE3   = 'VariableWhite3';
+    private const VAR_IDENT_TWCOLOR1 = 'VariableTWColor1';
+    private const VAR_IDENT_TWCOLOR2 = 'VariableTWColor2';
+    private const VAR_IDENT_TWCOLOR3 = 'VariableTWColor3';
 
 
     //Attributes
@@ -32,10 +35,11 @@ class WLEDSegment extends IPSModule
 
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyInteger(self::PROP_SEGMENT_ID, 0);
-        $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
-        $this->RegisterPropertyBoolean(self::PROP_SHOW_TEMPERATURE, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_EFFECTS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_PALLETS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_WHITE_COLOR, false);
+        $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([]));
 
@@ -73,34 +77,10 @@ class WLEDSegment extends IPSModule
         $this->EnableAction("VariablePower");
         $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, "Brightness", "~Intensity.255", 10);
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
-        if ($this->ReadPropertyBoolean(self::PROP_SHOW_TEMPERATURE)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, "Temperature", "WLED.Temperature", 11);
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_CCT)) {
+            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, "CCT", "WLED.Temperature", 11);
             $this->EnableAction(self::VAR_IDENT_TEMPERATURE);
         }
-
-        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, "Color 1", "~HexColor", 20);
-        $this->EnableAction(self::VAR_IDENT_COLOR1);
-        $this->RegisterVariableInteger(self::VAR_IDENT_WHITE1, "White 1", "~Intensity.255", 21);
-        $this->EnableAction(self::VAR_IDENT_WHITE1);
-        $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR1, "TWColor 1", "~TWColor", 22);
-        $this->EnableAction(self::VAR_IDENT_TWCOLOR1);
-
-        if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, "Color 2", "~HexColor", 24);
-            $this->EnableAction(self::VAR_IDENT_COLOR2);
-            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE2, "White 2", "~Intensity.255", 25);
-            $this->EnableAction(self::VAR_IDENT_WHITE2);
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR2, "TWColor 2", "~TWColor", 26);
-            $this->EnableAction(self::VAR_IDENT_TWCOLOR2);
-
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, "Color 3", "~HexColor", 27);
-            $this->EnableAction(self::VAR_IDENT_COLOR3);
-            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE3, "White 3", "~Intensity.255", 28);
-            $this->EnableAction(self::VAR_IDENT_WHITE3);
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR3, "TWColor 3", "~TWColor", 22);
-            $this->EnableAction(self::VAR_IDENT_TWCOLOR3);
-        }
-
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
             $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
@@ -109,18 +89,47 @@ class WLEDSegment extends IPSModule
             $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->RegisterVariableInteger("VariableEffects", "Effects", $wledEffects, 60);
-                $this->RegisterVariableInteger("VariableEffectsSpeed", "Effect Speed", "~Intensity.255", 61);
-                $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 62);
+                $this->RegisterVariableInteger("VariableEffects", "Effects", $wledEffects, 20);
+                $this->RegisterVariableInteger(self::VAR_IDENT_EFFECTS_SPEED, "Effect Speed", "~Intensity.255", 21);
+                $this->RegisterVariableInteger("VariableEffectsIntensity", "Effect Intensity", "~Intensity.255", 22);
                 $this->EnableAction("VariableEffects");
-                $this->EnableAction("VariableEffectsSpeed");
+                $this->EnableAction(self::VAR_IDENT_EFFECTS_SPEED);
                 $this->EnableAction("VariableEffectsIntensity");
             }
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
-                $this->RegisterVariableInteger("VariablePalettes", "Palettes", $wledPalettes, 50);
+                $this->RegisterVariableInteger("VariablePalettes", "Palettes", $wledPalettes, 23);
                 $this->EnableAction("VariablePalettes");
             }
+        }
+
+        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, "Color 1", "~HexColor", 30);
+        $this->EnableAction(self::VAR_IDENT_COLOR1);
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
+            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE1, "White 1", "~Intensity.255", 31);
+            $this->EnableAction(self::VAR_IDENT_WHITE1);
+        }
+        $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR1, "Tunable White Color 1", "~TWColor", 32);
+        $this->EnableAction(self::VAR_IDENT_TWCOLOR1);
+
+        if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, "Color 2", "~HexColor", 35);
+            $this->EnableAction(self::VAR_IDENT_COLOR2);
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
+                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE2, "White 2", "~Intensity.255", 36);
+                $this->EnableAction(self::VAR_IDENT_WHITE2);
+            }
+            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR2, "Tunable White Color 2", "~TWColor", 37);
+            $this->EnableAction(self::VAR_IDENT_TWCOLOR2);
+
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, "Color 3", "~HexColor", 40);
+            $this->EnableAction(self::VAR_IDENT_COLOR3);
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
+                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE3, "White 3", "~Intensity.255", 41);
+                $this->EnableAction(self::VAR_IDENT_WHITE3);
+            }
+            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR3, "Tunable White Color 3", "~TWColor", 42);
+            $this->EnableAction(self::VAR_IDENT_TWCOLOR3);
         }
     }
 
@@ -155,58 +164,43 @@ class WLEDSegment extends IPSModule
 
         //daten verarbeiten!
         if (array_key_exists("on", $data)) {
-            $this->SetValue("VariablePower", $data["on"]);
+            $this->checkVariableAndSetValue("VariablePower", $data["on"]);
         }
         if (array_key_exists("bri", $data)) {
-            $this->SetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
         }
 
         if (array_key_exists("col", $data)) {
-            $this->SetValue(self::VAR_IDENT_COLOR1, $this->RGBToHex($data["col"][0]));
-            $this->SetValue(self::VAR_IDENT_TWCOLOR1, $this->RGBToColorTemp($data["col"][0]));
-
-            if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-                $this->SetValue(self::VAR_IDENT_COLOR2, $this->RGBToHex($data["col"][1]));
-                $this->SetValue(self::VAR_IDENT_COLOR3, $this->RGBToHex($data["col"][2]));
-            }
+            $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR1, $this->RGBToHex($data["col"][0]));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR1, $this->RGBToColorTemp($data["col"][0]));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR2, $this->RGBToHex($data["col"][1]));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR3, $this->RGBToHex($data["col"][2]));
 
             if (count($data["col"][0]) > 3) { //weißkanal
-                $this->SetValue(self::VAR_IDENT_WHITE1, $data["col"][0][3]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE1, $data["col"][0][3]);
             }
             if (count($data["col"][1]) > 3) { //weißkanal
-                $this->SetValue(self::VAR_IDENT_WHITE2, $data["col"][1][3]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE2, $data["col"][1][3]);
             }
             if (count($data["col"][2]) > 3) { //weißkanal
-                $this->SetValue(self::VAR_IDENT_WHITE3, $data["col"][1][3]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE3, $data["col"][1][3]);
             }
         }
 
         if (array_key_exists("cct", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_TEMPERATURE)) {
-                $this->SetValue(self::VAR_IDENT_TEMPERATURE, $data["cct"]);
-            }
+            $this->checkVariableAndSetValue(self::VAR_IDENT_TEMPERATURE, $data["cct"]);
         }
-
         if (array_key_exists("pal", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
-                $this->SetValue("VariablePalettes", $data["pal"]);
-            }
+            $this->checkVariableAndSetValue("VariablePalettes", $data["pal"]);
         }
-
         if (array_key_exists("fx", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->SetValue("VariableEffects", $data["fx"]);
-            }
+            $this->checkVariableAndSetValue("VariableEffects", $data["fx"]);
         }
         if (array_key_exists("sx", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->SetValue("VariableEffectsSpeed", $data["sx"]);
-            }
+            $this->checkVariableAndSetValue(self::VAR_IDENT_EFFECTS_SPEED, $data["sx"]);
         }
         if (array_key_exists("ix", $data)) {
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->SetValue("VariableEffectsIntensity", $data["ix"]);
-            }
+            $this->checkVariableAndSetValue("VariableEffectsIntensity", $data["ix"]);
         }
     }
 
@@ -231,15 +225,17 @@ class WLEDSegment extends IPSModule
             case self::VAR_IDENT_WHITE2:
             case self::VAR_IDENT_WHITE3:
 
-
                 $segArr["col"][0] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR1 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR1));
-                $segArr["col"][0][3] = $this->GetValue(self::VAR_IDENT_WHITE1);
-
+                if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
+                    $segArr["col"][0][3] = $this->GetValue(self::VAR_IDENT_WHITE1);
+                }
                 if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
                     $segArr["col"][1] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR2 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR2));
-                    $segArr["col"][1][3] = $this->GetValue(self::VAR_IDENT_WHITE2);
                     $segArr["col"][2] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR3 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR3));
-                    $segArr["col"][2][3] = $this->GetValue(self::VAR_IDENT_WHITE3);
+                    if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
+                        $segArr["col"][1][3] = $this->GetValue(self::VAR_IDENT_WHITE2);
+                        $segArr["col"][2][3] = $this->GetValue(self::VAR_IDENT_WHITE3);
+                    }
                 } else {
                     $segArr["col"][1] = [0, 0, 0];
                     $segArr["col"][2] = [0, 0, 0];
@@ -274,7 +270,9 @@ class WLEDSegment extends IPSModule
             default:
                 throw new Exception("Invalid Ident");
         }
+
         $this->sendAndUpdateValue($Ident, $Value, $segArr);
+
     }
 
     /**
@@ -402,6 +400,21 @@ class WLEDSegment extends IPSModule
         }
 
         return 0;
+    }
+
+    /**
+     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     *
+     * @param string $Ident Der Ident der Variablen.
+     * @param mixed  $Value Der zu setzende Wert.
+     *
+     * @return void
+     */
+    private function checkVariableAndSetValue(string $Ident, $Value)
+    {
+        if ($this->GetIDForIdent($Ident)) {
+            $this->setValue($Ident, $Value);
+        }
     }
 
     private function HexToRGB($hexInt)

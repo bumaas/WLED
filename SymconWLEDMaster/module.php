@@ -84,7 +84,12 @@ class WLEDMaster extends IPSModule
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST)) {
             $deviceInfo    = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
             $wledPlaylists = isset($deviceInfo['mac']) ? 'WLED.Playlists.' . substr($deviceInfo['mac'], -4) : '';
-            $this->RegisterVariableInteger(self::VAR_IDENT_PLAYLIST, 'Playlists ID', IPS_VariableProfileExists($wledPlaylists) ? $wledPlaylists : '', 35);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_PLAYLIST,
+                'Playlists ID',
+                IPS_VariableProfileExists($wledPlaylists) ? $wledPlaylists : '',
+                35
+            );
             $this->EnableAction(self::VAR_IDENT_PLAYLIST);
         }
 
@@ -133,38 +138,38 @@ class WLEDMaster extends IPSModule
 
         //daten verarbeiten!
         if (array_key_exists("on", $data)) {
-            $this->SetValue(self::VAR_IDENT_POWER, $data["on"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_POWER, $data["on"]);
         }
         if (array_key_exists("bri", $data)) {
-            $this->SetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
         }
         if (array_key_exists("transition", $data)) {
-            $this->SetValue(self::VAR_IDENT_TRANSITION, ($data["transition"] / 10));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_TRANSITION, ($data["transition"] / 10));
         }
 
-        if ($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS) && array_key_exists("ps", $data)) {
-            $this->SetValue(self::VAR_IDENT_PRESET, $data["ps"]);
+        if (array_key_exists("ps", $data)) {
+            $this->checkVariableAndSetValue(self::VAR_IDENT_PRESET, $data["ps"]);
         }
 
-        if ($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST) && array_key_exists("pl", $data)) {
-            $this->SetValue(self::VAR_IDENT_PLAYLIST, $data["pl"]);
+        if (array_key_exists("pl", $data)) {
+            $this->checkVariableAndSetValue(self::VAR_IDENT_PLAYLIST, $data["pl"]);
         }
 
-        if ($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT) && array_key_exists("nl", $data)) {
+        if (array_key_exists("nl", $data)) {
             if (array_key_exists("on", $data["nl"])) {
-                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_ON, $data["nl"]["on"]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_ON, $data["nl"]["on"]);
             }
 
             if (array_key_exists("dur", $data["nl"])) {
-                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_DURATION, $data["nl"]["dur"]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_DURATION, $data["nl"]["dur"]);
             }
 
             if (array_key_exists("mode", $data["nl"])) {
-                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_MODE, $data["nl"]["mode"]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_MODE, $data["nl"]["mode"]);
             }
 
             if (array_key_exists("tbri", $data["nl"])) {
-                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, $data["nl"]["tbri"]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, $data["nl"]["tbri"]);
             }
 
             if (array_key_exists("rem", $data["nl"])) {
@@ -179,7 +184,7 @@ class WLEDMaster extends IPSModule
                 $time = new DateTime('2001-01-01');
                 $time->setTime($h, $m, $s);
 
-                $this->SetValue(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $time->getTimestamp());
+                $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $time->getTimestamp());
             }
         }
     }
@@ -191,70 +196,53 @@ class WLEDMaster extends IPSModule
         switch ($Ident) {
             case self::VAR_IDENT_POWER:
                 $sendArr["on"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_BRIGHTNESS:
                 $sendArr["bri"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_TRANSITION:
                 $sendArr["transition"] = $Value * 10;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_PRESET:
                 $sendArr["ps"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_PLAYLIST:
                 $sendArr["pl"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_ON:
                 $sendArr["nl"]["on"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_DURATION:
                 $sendArr["nl"]["dur"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_MODE:
                 $sendArr["nl"]["mode"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS:
                 $sendArr["nl"]["tbri"] = $Value;
-
-                $sendStr = json_encode($sendArr);
-                $this->SendData($sendStr);
-                $this->SetValue($Ident, $Value);
                 break;
             default:
                 throw new Exception("Invalid Ident");
         }
+
+        $this->sendAndUpdateValue($Ident, $Value, $sendArr);
+
+    }
+
+    /**
+     * Sends data and updates the value.
+     *
+     * @param string $ident   The identifier of the value.
+     * @param mixed  $value   The value to be set.
+     * @param array  $payload The payload to be sent.
+     *
+     * @return void
+     */
+    private function sendAndUpdateValue($ident, $value, array $payload)
+    {
+        $sendArr["seg"][] = $payload;
+        $this->SendData(json_encode($sendArr));
+        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
     }
 
     /**
@@ -289,6 +277,21 @@ class WLEDMaster extends IPSModule
             } else {
                 $this->LogMessage($Message . ':' . (string)$Data, KL_DEBUG);
             }
+        }
+    }
+
+    /**
+     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     *
+     * @param string $Ident Der Ident der Variablen.
+     * @param mixed  $Value Der zu setzende Wert.
+     *
+     * @return void
+     */
+    private function checkVariableAndSetValue(string $Ident, $Value)
+    {
+        if ($this->GetIDForIdent($Ident)){
+            $this->setValue($Ident, $Value);
         }
     }
 
