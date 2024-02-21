@@ -240,8 +240,7 @@ class WLEDMaster extends IPSModule
      */
     private function sendAndUpdateValue($ident, $value, array $payload)
     {
-        $sendArr["seg"][] = $payload;
-        $this->SendData(json_encode($sendArr));
+        $this->SendData(json_encode($payload));
         //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
     }
 
