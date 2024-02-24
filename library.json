@@ -1,12 +1,12 @@
 {  
 	"id": "{57FDE518-D2B6-7D50-216F-FC8539417587}",  
-	"author": "Swen Babenschneider",  
+	"author": "Swen Babenschneider/bumaas",
 	"name": "WLED Modules",  
 	"url": "kno.wled.ge",
 	"compatibility": {
 		"version": "7.0"
 	},
-	"version": "0.9.0",
-	"build": 14,
-	"date": 1708503512
+	"version": "1.0",
+	"build": 16,
+	"date": 1708794070
 }

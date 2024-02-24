@@ -1,10 +1,9 @@
 [![Version](https://img.shields.io/badge/Symcon-PHPModul-red.svg)](https://www.symcon.de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/)
-[![Version](https://img.shields.io/badge/Modul%20Version-0.9-blue.svg)]()
-[![Version](https://img.shields.io/badge/Symcon%20Version-5.3%20%3E-green.svg)](https://www.symcon.de/forum/threads/30857-IP-Symcon-5-3-%28Stable%29-Changelog)
+[![Version](https://img.shields.io/badge/Modul%20Version-1.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/Symcon%20Version-7.0%20%3E-green.svg)](https://www.symcon.de/forum/threads/30857-IP-Symcon-5-3-%28Stable%29-Changelog)
 
 # WLED
-Die Bibiliotek dient zum verteilen der WLED-Module im Modulstore
-Alle meine Module unter: https://github.com/Acer90/SymconModule
+Die Bibiliotek dient zum Steuern von LED Stripes an einem mit [WLED](http://kno.wled.ge) geflashten ESP Modul.
 
 ## Dokumentation
 
@@ -12,22 +11,31 @@ Alle meine Module unter: https://github.com/Acer90/SymconModule
 
 1. [Funktionsumfang](#1-funktionsumfang)  
 2. [Voraussetzungen](#2-voraussetzungen)  
-3. [Lizenz](#6-lizenz)
+3. [Lizenz](#3-lizenz)
 
 ## 1. Funktionsumfang
 
-- __SymconWLEDSplitter__ ([Dokumentation](SymconWLEDSplitter))  
-	Splitter, der die verbindung zwischen dem Webscoketclient und den WLED Instancen herstellt.
+Es werden drei Instanzen zur Verfügung gestellt:
+
+- __WLED Splitter__<br>
+	Der Splitter stellt die Verbindung zwischen dem WebScoket Client und den WLED Instanzen her.
 	
-- __SymconWLEDSegment__ ([Dokumentation](SymconWLEDSegment))  
-	Zur Steuerung der WLED Segmente
+- __WLED Segment__ ([Dokumentation](SymconWLEDSegment))  
+	Hierüber wird ein einzelnes Segment gesteuert.
+
+- __WLED Master__ ([Dokumentation](SymconWLEDSegment))  
+	Zur Steuerung des Masters.
+
+Bei der Anlage der Instanzen wird - sofern noch kein WebSocket angelegt wurde - ein WebSocket unter den IO Instanzen angelegt. Dort ist der Endpunkt einzutragen, unter dem der WLED Server erreicht werden kann.
+
+Er hat die Form "ws://[WLED_IP]/ws"
 
 ## 2. Voraussetzungen
 
- - IPS 5.3 oder höher  
+ - IPS 7.0 oder höher
+ - ESP Modul mit installiertem WLED
 
 ## 3. Lizenz
 
-  IPS-Modul:  
   [GNU GENERAL PUBLIC LICENSE](http://www.gnu.org/licenses/)  
  
