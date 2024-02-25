@@ -175,8 +175,12 @@ class WLEDSegment extends IPSModule
         if (array_key_exists("col", $data)) {
             $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR1, $this->RGBToHex($data["col"][0]));
             $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR1, $this->RGBToColorTemp($data["col"][0]));
+
             $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR2, $this->RGBToHex($data["col"][1]));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR2, $this->RGBToColorTemp($data["col"][1]));
+
             $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR3, $this->RGBToHex($data["col"][2]));
+            $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR3, $this->RGBToColorTemp($data["col"][2]));
 
             if (count($data["col"][0]) > 3) { //weißkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE1, $data["col"][0][3]);
@@ -185,7 +189,7 @@ class WLEDSegment extends IPSModule
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE2, $data["col"][1][3]);
             }
             if (count($data["col"][2]) > 3) { //weißkanal
-                $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE3, $data["col"][1][3]);
+                $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE3, $data["col"][2][3]);
             }
         }
 
@@ -267,6 +271,14 @@ class WLEDSegment extends IPSModule
 
             case self::VAR_IDENT_TWCOLOR1:
                 $segArr['col'][0] = $this->colorTempToRGB($Value);
+                break;
+
+            case self::VAR_IDENT_TWCOLOR2:
+                $segArr['col'][1] = $this->colorTempToRGB($Value);
+                break;
+
+            case self::VAR_IDENT_TWCOLOR3:
+                $segArr['col'][2] = $this->colorTempToRGB($Value);
                 break;
 
             default:
@@ -358,6 +370,9 @@ class WLEDSegment extends IPSModule
         while ($max_temp - $min_temp > 0.4) {
             $temp = ($max_temp + $min_temp) / 2;
             [$calculated_r, $calculated_g, $calculated_b] = $this->colorTempToRGB($temp);
+            if ($calculated_r === 0 || $rgb[0] === 0){
+                trigger_error(sprintf('unexpected colors! rgb: %s, calculated_r: %s, temp: %s', print_r($rgb, true), $calculated_r, $temp), E_USER_ERROR);
+            }
             if (($calculated_b / $calculated_r) >= $rgb[2] / $rgb[0]) {
                 $max_temp = $temp;
             } else {
@@ -414,7 +429,7 @@ class WLEDSegment extends IPSModule
      */
     private function checkVariableAndSetValue(string $Ident, $Value)
     {
-        if ($this->GetIDForIdent($Ident)) {
+        if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);
         }
     }

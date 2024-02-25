@@ -289,7 +289,7 @@ class WLEDMaster extends IPSModule
      */
     private function checkVariableAndSetValue(string $Ident, $Value)
     {
-        if ($this->GetIDForIdent($Ident)){
+        if (@$this->GetIDForIdent($Ident)){
             $this->setValue($Ident, $Value);
         }
     }
