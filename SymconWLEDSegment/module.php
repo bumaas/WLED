@@ -30,6 +30,11 @@ class WLEDSegment extends IPSModule
     //Attributes
     private const ATTR_DEVICE_INFO = 'DeviceInfo';
 
+    private const COLOR_TEMP_ACCURACY = 0.4;
+    private const MIN_COLOR_TEMP      = 1000;
+    private const MAX_COLOR_TEMP      = 12000;
+
+
     public function Create()
     {
         parent::Create();
@@ -363,23 +368,34 @@ class WLEDSegment extends IPSModule
      *
      * @return float The color temperature value.
      */
-    private function RGBToColorTemp(array $rgb)
+
+    private function RGBToColorTemp(array $rgb): float
     {
-        $min_temp = 1000;
-        $max_temp = 12000;
-        while ($max_temp - $min_temp > 0.4) {
-            $temp = ($max_temp + $min_temp) / 2;
-            [$calculated_r, $calculated_g, $calculated_b] = $this->colorTempToRGB($temp);
-            if ($calculated_r === 0 || $rgb[0] === 0){
-                trigger_error(sprintf('unexpected colors! rgb: %s, calculated_r: %s, temp: %s', print_r($rgb, true), $calculated_r, $temp), E_USER_ERROR);
+        if ($rgb[0] === 0){
+            return self::MIN_COLOR_TEMP;
+        }
+
+        $colorTempMin = self::MIN_COLOR_TEMP;
+        $colorTempMax = self::MAX_COLOR_TEMP;
+        while ($colorTempMax - $colorTempMin > self::COLOR_TEMP_ACCURACY) {
+            $averageColorTemp = ($colorTempMax + $colorTempMin) / 2;
+            [$calculatedRed, $calculatedGreen, $calculatedBlue] = $this->colorTempToRGB($averageColorTemp);
+
+            if ($calculatedRed === 0) {
+                trigger_error(
+                    sprintf('unexpected calculatedRed! rgb: %s, temp: %s', print_r($rgb, true), $averageColorTemp),
+                    E_USER_ERROR
+                );
             }
-            if (($calculated_b / $calculated_r) >= $rgb[2] / $rgb[0]) {
-                $max_temp = $temp;
+
+            if (($calculatedBlue / $calculatedRed) >= $rgb[2] / $rgb[0]) {
+                $colorTempMax = $averageColorTemp;
             } else {
-                $min_temp = $temp;
+                $colorTempMin = $averageColorTemp;
             }
         }
-        return ($max_temp + $min_temp) / 2;
+
+        return ($colorTempMax + $colorTempMin) / 2;
     }
 
     /**
