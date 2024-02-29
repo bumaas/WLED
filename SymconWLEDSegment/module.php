@@ -9,7 +9,7 @@ class WLEDSegment extends IPSModule
     private const PROP_SHOW_CCT         = 'ShowTemperature';
     private const PROP_SHOW_EFFECTS     = 'ShowEffects';
     private const PROP_SHOW_PALLETS     = 'ShowPalettes';
-    private const PROP_SHOW_WHITE_COLOR = 'ShowWhiteColor';
+    private const PROP_SHOW_WHITE_COLOR = 'ShowChannelWhite';
 
     //Variables
     private const VAR_IDENT_BRIGHTNESS    = "VariableBrightness";

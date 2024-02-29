@@ -9,33 +9,97 @@ Die Bibiliotek dient zum Steuern von LED Stripes an einem mit [WLED](http://kno.
 
 **Inhaltsverzeichnis**
 
-1. [Funktionsumfang](#1-funktionsumfang)  
-2. [Voraussetzungen](#2-voraussetzungen)  
-3. [Lizenz](#3-lizenz)
+1. [Voraussetzungen](#1-voraussetzungen)
+2. [Funktionsumfang](#2-funktionsumfang)  
+3. [Software-Installation](#3-software-installation)  
+4. [Einrichten der Instanzen in IP-Symcon](#4-einrichten-der-instanzen-in-ip-symcon)
+5. [Statusvariablen](#5-statusvariablen)
+6. [Lizenz](#6-lizenz)
 
-## 1. Funktionsumfang
+## 1. Voraussetzungen
+- IPS 7.0 oder höher
+- ESP Modul mit installiertem [WLED](https://kno.wled.ge/)
+
+## 2. Funktionsumfang
 
 Es werden drei Instanzen zur Verfügung gestellt:
 
 - __WLED Splitter__<br>
 	Der Splitter stellt die Verbindung zwischen dem WebScoket Client und den WLED Instanzen her.
 	
-- __WLED Segment__ ([Dokumentation](SymconWLEDSegment))  
+- __WLED Segment__ <br>
 	Hierüber wird ein einzelnes Segment gesteuert.
 
-- __WLED Master__ ([Dokumentation](SymconWLEDSegment))  
+- __WLED Master__  
 	Zur Steuerung des Masters.
 
 Bei der Anlage der Instanzen wird - sofern noch kein WebSocket angelegt wurde - ein WebSocket unter den IO Instanzen angelegt. Dort ist der Endpunkt einzutragen, unter dem der WLED Server erreicht werden kann.
 
 Er hat die Form "ws://[WLED_IP]/ws"
 
-## 2. Voraussetzungen
+## 3. Software-Installation
+Über den Module Store das 'WLED'-Modul installieren.
 
- - IPS 7.0 oder höher
- - ESP Modul mit installiertem WLED
+## 4. Einrichten der Instanzen in IP-Symcon
 
-## 3. Lizenz
+Unter 'Instanz hinzufügen' können die 'Geräte' mithilfe des Schnellfilters gefunden werden.
+
+### WS-Client
+Bei der Anlage der Instanzen wird - sofern noch kein WebSocket angelegt wurde - ein WebSocket unter den IO Instanzen angelegt. Dort ist der Endpunkt einzutragen, unter dem der WLED Server erreicht werden kann.
+
+Er hat die Form **"ws://[WLED_IP]/ws"**
+### WLED Splitter
+#### Konfigurationsseite
+Hier kann ausgewählt werden, ob der Einschaltzustand des Masters mit dem der Segmente synchronisiert werden soll.<br>
+Zudem stehen Funktionen zur Verfügung um die Presets, die Playlisten, die Effekte und die Paletten neu einzulesen.
+
+### WLED Master
+#### Konfigurationsseite
+| Name            | Beschreibung                                                       |
+|:----------------|:-------------------------------------------------------------------|
+| Presets         | es wird die Statusvariable 'Presets' angelegt                      |
+| Wiedergabeliste | es wird die Statusvariable 'Wiedergabeliste' angelegt              |
+| Nachtlicht      | es werden Statusvariablen zur Steuerung des Nachtlichts angelegt   |
+
+### WLED Segment
+#### Konfigurationsseite
+| Name         | Beschreibung                                                        |
+|:-------------|:--------------------------------------------------------------------|
+| Segment Nr.  | Nummer des Segments, das gesteuert werden soll                      |
+| Effekt Modus | es wird eine Statusvariable zur Auswahl des 'Effekt Modus' angelegt |
+| Paletten     | es wird eine Statusvariable zur Auswahl einer 'Palette' angelegt    |
+| Kanaal Weiß  | es wird eine Statusvariable zum Setzen des 'Kanal Weiß' angelegt    |
+| Farben 2 + 3 | es werden Statusvariablen für die Farben 2 + 3 angelegt             |
+| CCT          | es wird eine Statusvariable zur CCT-Steuerung angelegt             |
+
+## 5. Statusvariablen
+
+### WLED Master
+| Name                          | Typ           | Beschreibung                         |
+|:------------------------------|:--------------|:-------------------------------------|
+| Ein                           | Boolean       | Ein-/Auschalten eines Masters        |
+| Helligkeit                    | Integer       | Setzen der Helligkeit                |
+| Übergang                      | Float         | Setzen der Übergangszeit in Sekunden |
+| Presets                       | Integer       | Auswahl eines Presets                |
+| Wiedergabeliste               | Integer       | Auswahl einer Wiedergabliste         |
+| Nachtlicht an                 | Boolean       | Ein-/Auschalten des Nachtlichtmodus  |
+| Nachtlicht Dauer              | Integer | Dauer des Nachtlichtmodus            |
+| Nachtlicht Modus              | Integer | Art des Nachtlichts                  |
+| Nachtlicht Zielhelligkeit     | Integer | Zielhelligkeit des Nachtlichts       |
+| Nachtlicht verbleibende Dauer | Integer | verbleibende Dauer des Nachtlichts   |
+
+### WLED Segment
+| Name                        | Typ           | Beschreibung                          |
+|:----------------------------|:--------------|:--------------------------------------|
+| Ein                         | Boolean       | Ein-/Auschalten eines Segments        |
+| Helligkeit                  | Integer       | Setzen der Helligkeit                 |
+| Effekte                     | Integer | Auswahl eines Effekts                 |
+| Effekt Geschwindigkeit      | Integer | Setzen der Geshwindigkeit des Effekts |
+| Effekt Intensität           | Integer | Setzen der Intensität des Effekts     |
+| Farbe 1, 2, 3               | Integer | Setzen der Farbe                      |
+| Weißton Einstellung 1, 2, 4 | Integer | Setzen des Weißtons in K              |
+
+## 6. Lizenz
 
   [GNU GENERAL PUBLIC LICENSE](http://www.gnu.org/licenses/)  
  
