@@ -45,21 +45,25 @@ class WLEDMaster extends IPSModule
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
+
+        $this->RegisterVariables();
+
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;
         }
 
-        $this->RegisterVariables();
+        $this->updateDeviceInfo();
+    }
 
+    private function updateDeviceInfo()
+    {
         $this->GetUpdate();
-
         $host       = $this->getHostFromIOInstance();
         $deviceInfo = $this->getData($host, '/json/info');
         if (count($deviceInfo)) {
             $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo));
             $this->SetSummary(sprintf('%s:Master', $deviceInfo['name']));
         }
-
         $this->SetStatus(IS_ACTIVE);
     }
 
@@ -77,7 +81,12 @@ class WLEDMaster extends IPSModule
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS)) {
             $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
             $wledPresets = isset($deviceInfo['mac']) ? 'WLED.Presets.' . substr($deviceInfo['mac'], -4) : '';
-            $this->RegisterVariableInteger(self::VAR_IDENT_PRESET, $this->translate('Presets'), IPS_VariableProfileExists($wledPresets) ? $wledPresets : '', 30);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_PRESET,
+                $this->translate('Presets'),
+                IPS_VariableProfileExists($wledPresets) ? $wledPresets : '',
+                30
+            );
             $this->EnableAction(self::VAR_IDENT_PRESET);
         }
 
@@ -95,16 +104,31 @@ class WLEDMaster extends IPSModule
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT)) {
             $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, $this->translate("Nightlight On"), "~Switch", 50);
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_DURATION, $this->translate("Nightlight Duration"), "WLED.NightlightDuration", 51);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_NIGHTLIGHT_DURATION,
+                $this->translate("Nightlight Duration"),
+                "WLED.NightlightDuration",
+                51
+            );
             $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, $this->translate("Nightlight Mode"), "WLED.NightlightMode", 52);
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS, $this->translate("Nightlight Target Brightness"), "~Intensity.255", 53);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS,
+                $this->translate("Nightlight Target Brightness"),
+                "~Intensity.255",
+                53
+            );
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_ON);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_DURATION);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_MODE);
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS);
 
             //restdauer
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $this->translate("Remaining Nightlight Duration"), "~UnixTimestampTime", 54);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION,
+                $this->translate("Remaining Nightlight Duration"),
+                "~UnixTimestampTime",
+                54
+            );
         }
     }
 
@@ -126,7 +150,7 @@ class WLEDMaster extends IPSModule
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->ApplyChanges();
+            $this->updateDeviceInfo();
         }
     }
 
@@ -226,7 +250,6 @@ class WLEDMaster extends IPSModule
         }
 
         $this->sendAndUpdateValue($Ident, $Value, $sendArr);
-
     }
 
     /**
@@ -289,7 +312,7 @@ class WLEDMaster extends IPSModule
      */
     private function checkVariableAndSetValue(string $Ident, $Value)
     {
-        if (@$this->GetIDForIdent($Ident)){
+        if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);
         }
     }

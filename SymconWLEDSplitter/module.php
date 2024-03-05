@@ -25,33 +25,6 @@ class WLEDSplitter extends IPSModule
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
-        if (IPS_GetKernelRunlevel() !== KR_READY) {
-            return;
-        }
-
-
-        $host = $this->getHostFromParentInstance();
-        $this->SetSummary($host);
-        if (!empty($host) && Sys_Ping($host, 300)) {
-            $mac = $this->getData($host, '/json/info')['mac'];
-
-            $wledEffects  = 'WLED.Effects.' . substr($mac, -4);
-            $wledPalettes = 'WLED.Palettes.' . substr($mac, -4);
-
-            if (!IPS_VariableProfileExists($wledEffects)) {
-                IPS_CreateVariableProfile($wledEffects, VARIABLETYPE_INTEGER);
-            }
-
-            if (!IPS_VariableProfileExists($wledPalettes)) {
-                IPS_CreateVariableProfile($wledPalettes, VARIABLETYPE_INTEGER);
-            }
-
-            $wledEffectsArray = $this->getData($host, "/json/eff");
-            $this->updateAssociations($wledEffects, $wledEffectsArray);
-
-            $wledPaletteArray = $this->getData($host, "/json/pal");
-            $this->updateAssociations($wledPalettes, $wledPaletteArray);
-        }
 
         if (!IPS_VariableProfileExists("WLED.Temperature")) {
             IPS_CreateVariableProfile("WLED.Temperature", VARIABLETYPE_INTEGER);
@@ -82,6 +55,32 @@ class WLEDSplitter extends IPSModule
             IPS_SetVariableProfileAssociation("WLED.NightlightMode", 3, "sunrise", "", -1);
         }
 
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+
+        $this->processHostData();
+    }
+
+    private function processHostData()
+    {
+        $host = $this->getHostFromParentInstance();
+        $this->SetSummary($host);
+        if (!empty($host) && Sys_Ping($host, 300)) {
+            $mac          = $this->getData($host, '/json/info')['mac'];
+            $wledEffects  = 'WLED.Effects.' . substr($mac, -4);
+            $wledPalettes = 'WLED.Palettes.' . substr($mac, -4);
+            if (!IPS_VariableProfileExists($wledEffects)) {
+                IPS_CreateVariableProfile($wledEffects, VARIABLETYPE_INTEGER);
+            }
+            if (!IPS_VariableProfileExists($wledPalettes)) {
+                IPS_CreateVariableProfile($wledPalettes, VARIABLETYPE_INTEGER);
+            }
+            $wledEffectsArray = $this->getData($host, "/json/eff");
+            $this->updateAssociations($wledEffects, $wledEffectsArray);
+            $wledPaletteArray = $this->getData($host, "/json/pal");
+            $this->updateAssociations($wledPalettes, $wledPaletteArray);
+        }
         $this->SetStatus(IS_ACTIVE);
     }
 
@@ -135,8 +134,8 @@ class WLEDSplitter extends IPSModule
                 return $this->getData($host, "/json/pal");
             case 'updateProfilePresets':
             case 'updateProfilePlaylists':
-                $presets = $this->getData($host, '/presets.json');
-                $data[-1]    = $this->translate('-not active-');
+                $presets  = $this->getData($host, '/presets.json');
+                $data[-1] = $this->translate('-not active-');
                 foreach ($presets as $key => $preset) {
                     if (isset($preset['n'], $preset[($profileType === 'updateProfilePresets' ? 'mainseg' : 'playlist')])) {
                         $data[$key] = $preset['n'];
@@ -221,7 +220,7 @@ class WLEDSplitter extends IPSModule
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->ApplyChanges();
+            $this->processHostData();
         }
     }
 

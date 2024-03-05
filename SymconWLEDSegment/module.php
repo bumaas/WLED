@@ -2,7 +2,7 @@
 
 class WLEDSegment extends IPSModule
 {
-    private const MODID_WLED_SPLITTER    = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
+    private const MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
 
     private const PROP_SEGMENT_ID       = 'SegmentID';
     private const PROP_MORE_COLORS      = 'MoreColors';
@@ -59,16 +59,21 @@ class WLEDSegment extends IPSModule
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
-        if (IPS_GetKernelRunlevel() !== KR_READY) {
-            return;
-        }
 
         $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\”]*.*');
 
         $this->RegisterVariables();
 
-        $this->GetUpdate();
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
 
+        $this->updateDeviceInfo();
+    }
+
+    private function updateDeviceInfo()
+    {
+        $this->GetUpdate();
         $host       = $this->getHostFromIOInstance();
         $deviceInfo = $this->getData($host, '/json/info');
         if (count($deviceInfo)) {
@@ -158,7 +163,7 @@ class WLEDSegment extends IPSModule
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->ApplyChanges();
+            $this->updateDeviceInfo();
         }
     }
 
@@ -291,7 +296,6 @@ class WLEDSegment extends IPSModule
         }
 
         $this->sendAndUpdateValue($Ident, $Value, $segArr);
-
     }
 
     /**
@@ -371,7 +375,7 @@ class WLEDSegment extends IPSModule
 
     private function RGBToColorTemp(array $rgb): float
     {
-        if ($rgb[0] === 0){
+        if ($rgb[0] === 0) {
             return self::MIN_COLOR_TEMP;
         }
 
