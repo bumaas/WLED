@@ -1,30 +1,34 @@
-<?php
+<?php /** @noinspection AutoloadingIssuesInspection */
 
-class WLEDMaster extends IPSModule
+require_once __DIR__ . '/../libs/WLEDIds.php';
+
+use libs\WLEDIds;
+
+class WLEDMaster extends IPSModuleStrict
 {
 
     //Properties
-    private const PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
-    private const PROP_SHOWPRESETS    = 'ShowPresets';
-    private const PROP_SHOWPLAYLIST   = 'ShowPlaylist';
+    private const string PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
+    private const string PROP_SHOWPRESETS    = 'ShowPresets';
+    private const string PROP_SHOWPLAYLIST = 'ShowPlaylist';
 
     //Variables
-    private const VAR_IDENT_POWER                        = 'VariablePower';
-    private const VAR_IDENT_BRIGHTNESS                   = 'VariableBrightness';
-    private const VAR_IDENT_TRANSITION                   = 'VariableTransition';
-    private const VAR_IDENT_PRESET                       = 'VariablePresetsID';
-    private const VAR_IDENT_PLAYLIST                     = 'VariablePlaylistID';
-    private const VAR_IDENT_NIGHTLIGHT_ON                = 'VariableNightlightOn';
-    private const VAR_IDENT_NIGHTLIGHT_DURATION          = 'VariableNightlightDuration';
-    private const VAR_IDENT_NIGHTLIGHT_MODE              = 'VariableNightlightMode';
-    private const VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS  = 'VariableNightlightTargetBrightness';
-    private const VAR_IDENT_NIGHTLIGHT_REMAININGDURATION = 'VariableNightlightRemainingDuration';
+    private const string VAR_IDENT_POWER      = 'VariablePower';
+    private const string VAR_IDENT_BRIGHTNESS = 'VariableBrightness';
+    private const string VAR_IDENT_TRANSITION = 'VariableTransition';
+    private const string VAR_IDENT_PRESET     = 'VariablePresetsID';
+    private const string VAR_IDENT_PLAYLIST = 'VariablePlaylistID';
+    private const string VAR_IDENT_NIGHTLIGHT_ON = 'VariableNightlightOn';
+    private const string VAR_IDENT_NIGHTLIGHT_DURATION = 'VariableNightlightDuration';
+    private const string VAR_IDENT_NIGHTLIGHT_MODE     = 'VariableNightlightMode';
+    private const string VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS = 'VariableNightlightTargetBrightness';
+    private const string VAR_IDENT_NIGHTLIGHT_REMAININGDURATION = 'VariableNightlightRemainingDuration';
 
     //Attributes
-    private const ATTR_DEVICE_INFO = 'DeviceInfo';
+    private const string ATTR_DEVICE_INFO = 'DeviceInfo';
 
 
-    public function Create()
+    public function Create(): void
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
@@ -34,15 +38,15 @@ class WLEDMaster extends IPSModule
         $this->RegisterPropertyBoolean(self::PROP_SHOWPRESETS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOWPLAYLIST, false);
 
-        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([]));
+        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
 
-        $this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
+        //$this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
 
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht löschen
+        // Diese Zeile nicht lÃ¶schen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
 
@@ -55,19 +59,19 @@ class WLEDMaster extends IPSModule
         $this->updateDeviceInfo();
     }
 
-    private function updateDeviceInfo()
+    private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
         $host       = $this->getHostFromIOInstance();
         $deviceInfo = $this->getData($host, '/json/info');
         if (count($deviceInfo)) {
-            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo));
+            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
             $this->SetSummary(sprintf('%s:Master', $deviceInfo['name']));
         }
         $this->SetStatus(IS_ACTIVE);
     }
 
-    private function RegisterVariables()
+    private function RegisterVariables(): void
     {
         $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, $this->translate("Power"), "~Switch", 0);
         $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
@@ -79,7 +83,7 @@ class WLEDMaster extends IPSModule
 
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS)) {
-            $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
+            $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
             $wledPresets = isset($deviceInfo['mac']) ? 'WLED.Presets.' . substr($deviceInfo['mac'], -4) : '';
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_PRESET,
@@ -91,7 +95,7 @@ class WLEDMaster extends IPSModule
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST)) {
-            $deviceInfo    = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
+            $deviceInfo    = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
             $wledPlaylists = isset($deviceInfo['mac']) ? 'WLED.Playlists.' . substr($deviceInfo['mac'], -4) : '';
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_PLAYLIST,
@@ -132,20 +136,21 @@ class WLEDMaster extends IPSModule
         }
     }
 
-    public function GetUpdate()
+    public function GetUpdate(): void
     {
-        $this->SendData(json_encode(['v' => true]));
+        $this->SendData(json_encode(['v' => true], JSON_THROW_ON_ERROR));
     }
 
-    public function SendData(string $jsonString)
+    public function SendData(string $jsonString): void
     {
         @$this->SendDataToParent(
-            json_encode(["DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString])
+            json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
+                        JSON_THROW_ON_ERROR)
         );
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
     {
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
@@ -154,7 +159,7 @@ class WLEDMaster extends IPSModule
         }
     }
 
-    public function ReceiveData($JSONString)
+    public function ReceiveData($JSONString): string
     {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
@@ -211,9 +216,10 @@ class WLEDMaster extends IPSModule
                 $this->checkVariableAndSetValue(self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION, $time->getTimestamp());
             }
         }
+        return '';
     }
 
-    public function RequestAction($Ident, $Value)
+    public function RequestAction($Ident, $Value): void
     {
         $sendArr = [];
 
@@ -246,7 +252,7 @@ class WLEDMaster extends IPSModule
                 $sendArr["nl"]["tbri"] = $Value;
                 break;
             default:
-                throw new Exception("Invalid Ident");
+                throw new RuntimeException("Invalid Ident");
         }
 
         $this->sendAndUpdateValue($Ident, $Value, $sendArr);
@@ -260,22 +266,25 @@ class WLEDMaster extends IPSModule
      * @param array  $payload The payload to be sent.
      *
      * @return void
+     * @throws \JsonException
+     * @throws \JsonException
      */
-    private function sendAndUpdateValue($ident, $value, array $payload)
+    private function sendAndUpdateValue(string $ident, mixed $value, array $payload): void
     {
-        $this->SendData(json_encode($payload));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
+        $this->SendData(json_encode($payload, JSON_THROW_ON_ERROR));
+        //        $this->SetValue($ident, $value); auskommentiert, da durch rÃ¼ckkanal gesetzt
     }
 
     /**
-     * Ergänzt SendDebug um Möglichkeit Objekte und Array auszugeben.
+     * ErgÃ¤nzt SendDebug um die MÃ¶glichkeit, Objekte und Array auszugeben.
      *
-     * @param string $Message Nachricht für Data.
-     * @param mixed  $Data    Daten für die Ausgabe.
+     * @param string $Message Nachricht fÃ¼r Data.
+     * @param mixed  $Data    Daten fÃ¼r die Ausgabe.
+     * @param        $Format
      *
-     * @return int $Format Ausgabeformat für Strings.
+     * @return bool $Format Ausgabeformat fÃ¼r Strings.
      */
-    protected function SendDebug($Message, $Data, $Format): void
+    protected function SendDebug(string $Message, $Data, $Format): bool
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
@@ -292,32 +301,32 @@ class WLEDMaster extends IPSModule
                 $this->SendDebug($Message . '->' . $Key, $DebugData, 0);
             }
         } elseif (is_bool($Data)) {
-            parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
+            return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
+        } elseif (IPS_GetKernelRunlevel() === KR_READY) {
+            return parent::SendDebug($Message, (string)$Data, $Format);
         } else {
-            if (IPS_GetKernelRunlevel() == KR_READY) {
-                parent::SendDebug($Message, (string)$Data, $Format);
-            } else {
-                $this->LogMessage($Message . ':' . (string)$Data, KL_DEBUG);
-            }
+            $this->LogMessage($Message . ':' . $Data, KL_DEBUG);
         }
+
+        return false;
     }
 
     /**
-     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     * PrÃ¼ft, ob die angegebene Variable vorhanden ist, und setzt den Wert entsprechend.
      *
      * @param string $Ident Der Ident der Variablen.
      * @param mixed  $Value Der zu setzende Wert.
      *
      * @return void
      */
-    private function checkVariableAndSetValue(string $Ident, $Value)
+    private function checkVariableAndSetValue(string $Ident, mixed $Value): void
     {
         if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);
         }
     }
 
-    private function HexToRGB($hexInt)
+    private function HexToRGB($hexInt): array
     {
         $arr    = [];
         $arr[0] = floor($hexInt / 65536);
@@ -327,7 +336,7 @@ class WLEDMaster extends IPSModule
         return $arr;
     }
 
-    private function RGBToHex($rgb_arr)
+    private function RGBToHex($rgb_arr): int
     {
         return $rgb_arr[0] * 256 * 256 + $rgb_arr[1] * 256 + $rgb_arr[2];
     }
@@ -343,7 +352,7 @@ class WLEDMaster extends IPSModule
         return parse_url($url, PHP_URL_HOST) ? : '';
     }
 
-    private function getData($host, $path)
+    private function getData($host, $path): array
     {
         $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
                                                                                                               'http' => ['timeout' => 2]
@@ -352,7 +361,9 @@ class WLEDMaster extends IPSModule
             return [];
         }
 
-        return json_decode($jsonData, true);
+        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
     }
 
 }
+
+

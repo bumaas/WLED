@@ -1,14 +1,18 @@
 <?php
 
-class WLEDSplitter extends IPSModule
+require_once __DIR__ . '/../libs/WLEDIds.php';
+
+//use libs\WLEDIds;
+
+/** @noinspection AutoloadingIssuesInspection */
+
+class WLEDSplitter extends IPSModuleStrict
 {
-    private const MODID_WS_CLIENT    = '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}';
-    private const MODID_WLED_SEGMENT = '{D2353839-DA64-DF79-7CD5-4DD827DCE82A}';
-    private const MODID_WLED_MASTER  = '{79D5ACD0-7EED-FBA6-22D7-04AEB1BBBE97}';
+    private const string MODID_WEBSOCKET_CLIENT = '{D68FD31F-0E90-7019-F16C-1949BD3079EF}';
 
-    private const PROP_SYNCPOWER = 'SyncPower';
+    private const string PROP_SYNCPOWER = 'SyncPower';
 
-    public function Create()
+    public function Create(): void
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
@@ -16,13 +20,13 @@ class WLEDSplitter extends IPSModule
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyBoolean(self::PROP_SYNCPOWER, true);
 
-        $this->RequireParent("{D68FD31F-0E90-7019-F16C-1949BD3079EF}");
+        //$this->RequireParent(self::MODID_WEBSOCKET_CLIENT);
     }
 
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht löschen
+        // Diese Zeile nicht lÃ¶schen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
 
@@ -62,7 +66,7 @@ class WLEDSplitter extends IPSModule
         $this->processHostData();
     }
 
-    private function processHostData()
+    private function processHostData(): void
     {
         $host = $this->getHostFromParentInstance();
         $this->SetSummary($host);
@@ -84,7 +88,7 @@ class WLEDSplitter extends IPSModule
         $this->SetStatus(IS_ACTIVE);
     }
 
-    public function RequestAction($Ident, $Value)
+    public function RequestAction($Ident, $Value): void
     {
         $this->SendDebug(__FUNCTION__, sprintf('Ident: %s, Value: %s', $Ident, $Value), 0);
         switch ($Ident) {
@@ -92,14 +96,14 @@ class WLEDSplitter extends IPSModule
             case 'updateProfilePallets':
             case 'updateProfilePresets':
             case 'updateProfilePlaylists':
-                $this->processProfileUpdate($Ident);
+                $this->processProfileUpdate(str_replace('updateProfile', '', $Ident));
                 break;
             default:
                 trigger_error('unknown ident: ' . $Ident);
         }
     }
 
-    private function processProfileUpdate($profileType)
+    private function processProfileUpdate(string $profileType): void
     {
         $host = $this->getHostFromParentInstance();
         if (empty($host) || !Sys_Ping($host, 300)) {
@@ -107,7 +111,7 @@ class WLEDSplitter extends IPSModule
         }
 
         $mac         = $this->getData($host, '/json/info')['mac'];
-        $profileName = $this->getProfileName($profileType, $mac);
+        $profileName = sprintf('WLED.%s.%s', $profileType, substr($mac, -4));
 
         if (!IPS_VariableProfileExists($profileName)) {
             IPS_CreateVariableProfile($profileName, VARIABLETYPE_INTEGER);
@@ -120,24 +124,20 @@ class WLEDSplitter extends IPSModule
         }
     }
 
-    private function getProfileName($type, $mac)
-    {
-        return sprintf('WLED.%s.%s', str_replace('updateProfile', '', $type), substr($mac, -4));
-    }
 
-    private function fetchProfileData($host, $profileType)
+    private function fetchProfileData(string $host, string $profileType): ?array
     {
         switch ($profileType) {
-            case 'updateProfileEffects':
+            case 'Effects':
                 return $this->getData($host, "/json/eff");
-            case 'updateProfilePallets':
+            case 'Pallets':
                 return $this->getData($host, "/json/pal");
-            case 'updateProfilePresets':
-            case 'updateProfilePlaylists':
+            case 'Presets':
+            case 'Playlists':
                 $presets  = $this->getData($host, '/presets.json');
                 $data[-1] = $this->translate('-not active-');
                 foreach ($presets as $key => $preset) {
-                    if (isset($preset['n'], $preset[($profileType === 'updateProfilePresets' ? 'mainseg' : 'playlist')])) {
+                    if (isset($preset['n'], $preset[($profileType === 'Presets' ? 'mainseg' : 'playlist')])) {
                         $data[$key] = $preset['n'];
                     }
                 }
@@ -158,7 +158,7 @@ class WLEDSplitter extends IPSModule
         return parse_url($url, PHP_URL_HOST) ? : '';
     }
 
-    private function getData($host, $path)
+    private function getData($host, $path): array
     {
         $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
                                                                                                               'http' => ['timeout' => 1]
@@ -167,10 +167,10 @@ class WLEDSplitter extends IPSModule
             return [];
         }
 
-        return json_decode($jsonData, true);
+        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
     }
 
-    private function updateAssociations(string $profileName, array $dataArray)
+    private function updateAssociations(string $profileName, array $dataArray): void
     {
         $this->SendDebug(__FUNCTION__, sprintf('profile: %s, %s', $profileName, print_r($dataArray, true)), 0);
         // Deleting old associations
@@ -184,7 +184,7 @@ class WLEDSplitter extends IPSModule
                 array_splice($dataArray, 0, 128);
                 $this->SendDebug(
                     __FUNCTION__,
-                    'Das Maximum von 128 Profilen wurde überschritten. Folgende Assoziationen wurden nicht angelegt: ' . implode(
+                    'Das Maximum von 128 Profilen wurde Ã¼berschritten. Folgende Assoziationen wurden nicht angelegt: ' . implode(
                         ', ',
                         $dataArray
                     ),
@@ -197,25 +197,31 @@ class WLEDSplitter extends IPSModule
         }
     }
 
-    public function SendData(string $jsonString)
+    public function SendData(string $jsonString): void
     {
-        $this->SendDataToParent(json_encode(["DataID" => self::MODID_WS_CLIENT, "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString]));
+        $this->SendDataToParent(
+            json_encode(["DataID" => WLEDIds::DATA_WEBSOCKET_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)], JSON_THROW_ON_ERROR)
+        );
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
-    private function SendDataToSegment($jsonString)
+    private function SendDataToSegment($jsonString): void
     {
-        $this->SendDataToChildren(json_encode(["DataID" => self::MODID_WLED_SEGMENT, "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString]));
+        $this->SendDataToChildren(
+            json_encode(["DataID" => WLEDIds::DATA_SPLITTER_TO_SEGMENT, "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString], JSON_THROW_ON_ERROR)
+        );
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
-    private function SendDataToMaster($jsonString)
+    private function SendDataToMaster($jsonString): void
     {
-        $this->SendDataToChildren(json_encode(["DataID" => self::MODID_WLED_MASTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString]));
+        $this->SendDataToChildren(
+            json_encode(["DataID" => WLEDIds::DATA_SPLITTER_TO_MASTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString], JSON_THROW_ON_ERROR)
+        );
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
     {
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
@@ -224,76 +230,85 @@ class WLEDSplitter extends IPSModule
         }
     }
 
-    public function ReceiveData($JSONString)
+    public function ReceiveData($JSONString): string
     {
-        $data = json_decode($JSONString, true);
-        $this->SendDebug(__FUNCTION__, $data['Buffer'], 0);
+        $data = json_decode($JSONString, true, 512, JSON_THROW_ON_ERROR);
+        $buffer = hex2bin((string)$data['Buffer']);
+        if ($buffer === false) {
+            $buffer = (string)$data['Buffer'];
+        }
+        $this->SendDebug(__FUNCTION__, $buffer, 0);
 
-        $jsonData = json_decode($data['Buffer'], true);
+        $jsonData = json_decode($buffer, true, 512, JSON_THROW_ON_ERROR);
 
         if (!isset($jsonData['state'])) {
-            return;
+            return '';
         }
 
         $state = $jsonData['state'];
 
-        //nachricht zum Master schicken
-        $this->SendDataToMaster(json_encode($state));
+        //Nachricht zum Master schicken
+        $this->SendDataToMaster(json_encode($state, JSON_THROW_ON_ERROR));
 
-        //nachricht an die Segmente schicken
+        //Nachricht an die Segmente schicken
         if (!isset($state['seg']) || !is_array($state['seg'])) {
-            return;
+            return '';
         }
 
         $powerOn = false;
 
         foreach ($state["seg"] as $segmentData) {
-            if ($this->ReadPropertyBoolean("SyncPower")) {
-                if ($state["on"] === false) {
-                    //alle Segmente ausschalten, wenn wled ausgeschalten wird!
-                    $segmentData["on"] = false;
-                    $this->SendDebug(__FUNCTION__, 'Turn off all segments', 0);
-                }
+            if ($state["on"] === false && $this->ReadPropertyBoolean("SyncPower")) {
+                //alle Segmente ausschalten, wenn wled ausgeschaltet wird!
+                $segmentData["on"] = false;
+                $this->SendDebug(__FUNCTION__, 'Turn off all segments', 0);
             }
 
-            $this->SendDataToSegment(json_encode($segmentData));
+            $this->SendDataToSegment(json_encode($segmentData, JSON_THROW_ON_ERROR));
 
             if ($segmentData["on"] === true) {
                 $powerOn = true;
             }
         }
 
-        //prüfen, ob alle Segmente ausgeschalten wurden!
-        if ($this->ReadPropertyBoolean("SyncPower")) {
-            if ($state["on"] && $powerOn === false) {
-                $this->SendData('{"on":false}'); //an den Parent schicken
-            }
+        //prÃ¼fen, ob alle Segmente ausgeschaltet wurden
+        if ($state["on"] && ($powerOn === false) && $this->ReadPropertyBoolean("SyncPower")) {
+            $this->SendData('{"on":false}'); //an den Parent schicken
         }
+        return '';
     }
 
-    public function ForwardData($JSONString)
+    public function ForwardData($JSONString): string
     {
-        $data = json_decode($JSONString, true);
-        $this->SendDebug(__FUNCTION__, $data['Buffer'], 0);
-        $data = json_decode($data['Buffer'], true);
+        $data = json_decode($JSONString, true, 512, JSON_THROW_ON_ERROR);
+        $buffer = hex2bin((string)$data['Buffer']);
+        if ($buffer === false) {
+            $buffer = (string)$data['Buffer'];
+        }
+        $this->SendDebug(__FUNCTION__, $buffer, 0);
+        $data = json_decode($buffer, true, 512, JSON_THROW_ON_ERROR);
 
+        /*
         if (array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0 && $data["seg"][0]["on"] === true) {
             // wenn segment eingeschaltet wird, dann wled mit einschalten
-            //$this->SendData('{"on":true}'); //todo: auskommentiert da die app das nicht so macht. eventuell als Option verfügbar machen
+            $this->SendData('{"on":true}'); //todo: auskommentiert da die app das nicht so macht. eventuell als Option verfÃ¼gbar machen
         }
+        */
 
-        $this->SendData(json_encode($data));
+        $this->SendData(json_encode($data, JSON_THROW_ON_ERROR));
+        return '';
     }
 
     /**
-     * Ergänzt SendDebug um Möglichkeit Objekte und Array auszugeben.
+     * ErgÃ¤nzt SendDebug um die MÃ¶glichkeit, Objekte und Array auszugeben.
      *
-     * @param string $Message Nachricht für Data.
-     * @param mixed  $Data    Daten für die Ausgabe.
+     * @param string $Message Nachricht fÃ¼r Data.
+     * @param mixed  $Data    Daten fÃ¼r die Ausgabe.
      * @param int    $Format
      *
+     * @return bool
      */
-    protected function SendDebug($Message, $Data, $Format): void
+    protected function SendDebug(string $Message, $Data, int $Format): bool
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
@@ -310,12 +325,16 @@ class WLEDSplitter extends IPSModule
                 $this->SendDebug($Message . '->' . $Key, $DebugData, 0);
             }
         } elseif (is_bool($Data)) {
-            parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
+            return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
         } elseif (IPS_GetKernelRunlevel() === KR_READY) {
-            parent::SendDebug($Message, (string)$Data, $Format);
+            return parent::SendDebug($Message, (string)$Data, $Format);
         } else {
             $this->LogMessage($Message . ':' . $Data, KL_DEBUG);
         }
+
+        return false;
     }
 
 }
+
+

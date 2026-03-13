@@ -1,41 +1,45 @@
-<?php
+<?php /** @noinspection AutoloadingIssuesInspection */
 
-class WLEDSegment extends IPSModule
+require_once __DIR__ . '/../libs/WLEDIds.php';
+
+use libs\WLEDIds;
+
+class WLEDSegment extends IPSModuleStrict
 {
-    private const MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
+    private const string MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
 
-    private const PROP_SEGMENT_ID       = 'SegmentID';
-    private const PROP_MORE_COLORS      = 'MoreColors';
-    private const PROP_SHOW_CCT         = 'ShowTemperature';
-    private const PROP_SHOW_EFFECTS     = 'ShowEffects';
-    private const PROP_SHOW_PALLETS     = 'ShowPalettes';
-    private const PROP_SHOW_WHITE_COLOR = 'ShowChannelWhite';
+    private const string PROP_SEGMENT_ID  = 'SegmentID';
+    private const string PROP_MORE_COLORS = 'MoreColors';
+    private const string PROP_SHOW_CCT    = 'ShowTemperature';
+    private const string PROP_SHOW_EFFECTS = 'ShowEffects';
+    private const string PROP_SHOW_PALLETS = 'ShowPalettes';
+    private const string PROP_SHOW_WHITE_COLOR = 'ShowChannelWhite';
 
     //Variables
-    private const VAR_IDENT_BRIGHTNESS    = "VariableBrightness";
-    private const VAR_IDENT_TEMPERATURE   = 'VariableTemperature';
-    private const VAR_IDENT_EFFECTS_SPEED = 'VariableEffectsSpeed';
+    private const string VAR_IDENT_BRIGHTNESS  = "VariableBrightness";
+    private const string VAR_IDENT_TEMPERATURE = 'VariableTemperature';
+    private const string VAR_IDENT_EFFECTS_SPEED = 'VariableEffectsSpeed';
 
-    private const VAR_IDENT_COLOR1   = 'VariableColor1';
-    private const VAR_IDENT_COLOR2   = 'VariableColor2';
-    private const VAR_IDENT_COLOR3   = 'VariableColor3';
-    private const VAR_IDENT_WHITE1   = 'VariableWhite';
-    private const VAR_IDENT_WHITE2   = 'VariableWhite2';
-    private const VAR_IDENT_WHITE3   = 'VariableWhite3';
-    private const VAR_IDENT_TWCOLOR1 = 'VariableTWColor1';
-    private const VAR_IDENT_TWCOLOR2 = 'VariableTWColor2';
-    private const VAR_IDENT_TWCOLOR3 = 'VariableTWColor3';
+    private const string VAR_IDENT_COLOR1 = 'VariableColor1';
+    private const string VAR_IDENT_COLOR2 = 'VariableColor2';
+    private const string VAR_IDENT_COLOR3 = 'VariableColor3';
+    private const string VAR_IDENT_WHITE1 = 'VariableWhite';
+    private const string VAR_IDENT_WHITE2 = 'VariableWhite2';
+    private const string VAR_IDENT_WHITE3 = 'VariableWhite3';
+    private const string VAR_IDENT_TWCOLOR1 = 'VariableTWColor1';
+    private const string VAR_IDENT_TWCOLOR2 = 'VariableTWColor2';
+    private const string VAR_IDENT_TWCOLOR3 = 'VariableTWColor3';
 
 
     //Attributes
-    private const ATTR_DEVICE_INFO = 'DeviceInfo';
+    private const string ATTR_DEVICE_INFO = 'DeviceInfo';
 
-    private const COLOR_TEMP_ACCURACY = 0.4;
-    private const MIN_COLOR_TEMP      = 1000;
-    private const MAX_COLOR_TEMP      = 12000;
+    private const float COLOR_TEMP_ACCURACY = 0.4;
+    private const int MIN_COLOR_TEMP        = 1000;
+    private const int MAX_COLOR_TEMP  = 12000;
 
 
-    public function Create()
+    public function Create(): void
     {
         parent::Create();
         $this->SendDebug(__FUNCTION__, '', 0);
@@ -48,19 +52,19 @@ class WLEDSegment extends IPSModule
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
 
-        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([]));
+        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
 
-        $this->ConnectParent(self::MODID_WLED_SPLITTER);
+//        $this->ConnectParent(self::MODID_WLED_SPLITTER);
     }
 
-    public function ApplyChanges()
+    public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht löschen
+        // Diese Zeile nicht lÃ¶schen
         parent::ApplyChanges();
         $this->SendDebug(__FUNCTION__, '', 0);
 
-        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\”]*.*');
+        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\â€]*.*');
 
         $this->RegisterVariables();
 
@@ -71,19 +75,19 @@ class WLEDSegment extends IPSModule
         $this->updateDeviceInfo();
     }
 
-    private function updateDeviceInfo()
+    private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
         $host       = $this->getHostFromIOInstance();
         $deviceInfo = $this->getData($host, '/json/info');
         if (count($deviceInfo)) {
-            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo));
+            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
             $this->SetSummary(sprintf('%s:%s', $deviceInfo['name'], $this->ReadPropertyInteger(self::PROP_SEGMENT_ID)));
         }
         $this->SetStatus(IS_ACTIVE);
     }
 
-    private function RegisterVariables()
+    private function RegisterVariables(): void
     {
         $this->RegisterVariableBoolean("VariablePower", $this->translate("Power"), "~Switch", 0);
         $this->EnableAction("VariablePower");
@@ -95,8 +99,8 @@ class WLEDSegment extends IPSModule
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
-            $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true);
-            $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo)), 0);
+            $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
+            $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo, JSON_THROW_ON_ERROR)), 0);
             $wledEffects  = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
             $wledPalletes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
@@ -145,20 +149,21 @@ class WLEDSegment extends IPSModule
         }
     }
 
-    public function GetUpdate()
+    public function GetUpdate(): void
     {
-        $this->SendData(json_encode(['v' => true]));
+        $this->SendData(json_encode(['v' => true], JSON_THROW_ON_ERROR));
     }
 
-    public function SendData(string $jsonString)
+    public function SendData(string $jsonString): void
     {
         @$this->SendDataToParent(
-            json_encode(["DataID" => "{7B4E5B18-F847-8F8A-F148-3FB3F482E295}", "FrameTyp" => 1, "Fin" => true, "Buffer" => $jsonString])
+            json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
+                        JSON_THROW_ON_ERROR)
         );
         $this->SendDebug(__FUNCTION__, $jsonString, 0);
     }
 
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
     {
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
@@ -167,7 +172,7 @@ class WLEDSegment extends IPSModule
         }
     }
 
-    public function ReceiveData($JSONString)
+    public function ReceiveData($JSONString): string
     {
         $data = json_decode($JSONString);
         $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
@@ -192,13 +197,13 @@ class WLEDSegment extends IPSModule
             $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR3, $this->RGBToHex($data["col"][2]));
             $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR3, $this->RGBToColorTemp($data["col"][2]));
 
-            if (count($data["col"][0]) > 3) { //weißkanal
+            if (count($data["col"][0]) > 3) { //weiÃŸkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE1, $data["col"][0][3]);
             }
-            if (count($data["col"][1]) > 3) { //weißkanal
+            if (count($data["col"][1]) > 3) { //weiÃŸkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE2, $data["col"][1][3]);
             }
-            if (count($data["col"][2]) > 3) { //weißkanal
+            if (count($data["col"][2]) > 3) { //weiÃŸkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE3, $data["col"][2][3]);
             }
         }
@@ -218,9 +223,10 @@ class WLEDSegment extends IPSModule
         if (array_key_exists("ix", $data)) {
             $this->checkVariableAndSetValue("VariableEffectsIntensity", $data["ix"]);
         }
+        return '';
     }
 
-    public function RequestAction($Ident, $Value)
+    public function RequestAction($Ident, $Value): void
     {
         $segArr       = [];
         $segArr["id"] = $this->ReadPropertyInteger(self::PROP_SEGMENT_ID);
@@ -292,7 +298,7 @@ class WLEDSegment extends IPSModule
                 break;
 
             default:
-                throw new Exception("Invalid Ident");
+                throw new RuntimeException("Invalid Ident");
         }
 
         $this->sendAndUpdateValue($Ident, $Value, $segArr);
@@ -306,12 +312,14 @@ class WLEDSegment extends IPSModule
      * @param array  $payload The payload to be sent.
      *
      * @return void
+     * @throws \JsonException
+     * @throws \JsonException
      */
-    private function sendAndUpdateValue($ident, $value, array $payload)
+    private function sendAndUpdateValue(string $ident, mixed $value, array $payload): void
     {
         $sendArr["seg"][] = $payload;
-        $this->SendData(json_encode($sendArr));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
+        $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
+        //        $this->SetValue($ident, $value); auskommentiert, da durch rÃ¼ckkanal gesetzt
     }
 
     /**
@@ -322,7 +330,7 @@ class WLEDSegment extends IPSModule
      *
      * @return array An array containing the red, green, and blue values as integers.
      */
-    private function colorTempToRGB($kelvin)
+    private function colorTempToRGB(int $kelvin): array
     {
         $temp = $kelvin / 100;
 
@@ -336,18 +344,16 @@ class WLEDSegment extends IPSModule
             $red = ($red > 255) ? 255 : $red;
         }
 
-        // Grün
+        // GrÃ¼n
         if ($temp <= 66) {
             $green = $temp;
             $green = 99.4708025861 * log($green) - 161.1195681661;
-            $green = ($green < 0) ? 0 : $green;
-            $green = ($green > 255) ? 255 : $green;
         } else {
             $green = $temp - 60;
             $green = 288.1221695283 * $green ** -0.0755148492;
-            $green = ($green < 0) ? 0 : $green;
-            $green = ($green > 255) ? 255 : $green;
         }
+        $green = ($green < 0) ? 0 : $green;
+        $green = ($green > 255) ? 255 : $green;
 
         // Blau
         if ($temp >= 66) {
@@ -371,6 +377,8 @@ class WLEDSegment extends IPSModule
      *                   The array must have three elements representing Red, Green, and Blue values respectively.
      *
      * @return float The color temperature value.
+     * @throws \Exception
+     * @throws \Exception
      */
 
     private function RGBToColorTemp(array $rgb): float
@@ -386,10 +394,7 @@ class WLEDSegment extends IPSModule
             [$calculatedRed, $calculatedGreen, $calculatedBlue] = $this->colorTempToRGB($averageColorTemp);
 
             if ($calculatedRed === 0) {
-                trigger_error(
-                    sprintf('unexpected calculatedRed! rgb: %s, temp: %s', print_r($rgb, true), $averageColorTemp),
-                    E_USER_ERROR
-                );
+                throw new RuntimeException(sprintf('unexpected calculatedRed! rgb: %s, temp: %s', print_r($rgb, true), $averageColorTemp));
             }
 
             if (($calculatedBlue / $calculatedRed) >= $rgb[2] / $rgb[0]) {
@@ -403,14 +408,14 @@ class WLEDSegment extends IPSModule
     }
 
     /**
-     * Ergänzt SendDebug um Möglichkeit Objekte und Array auszugeben.
+     * ErgÃ¤nzt SendDebug um die MÃ¶glichkeit, Objekte und Array auszugeben.
      *
-     * @param string $Message Nachricht für Data.
-     * @param mixed  $Data    Daten für die Ausgabe.
+     * @param string $Message Nachricht fÃ¼r Data.
+     * @param mixed  $Data    Daten fÃ¼r die Ausgabe.
      *
-     * @return int $Format Ausgabeformat für Strings.
+     * @return int $Format Ausgabeformat fÃ¼r Strings.
      */
-    protected function SendDebug($Message, $Data, $Format): int
+    protected function SendDebug(string $Message, $Data, $Format): bool
     {
         if (is_array($Data)) {
             if (count($Data) > 25) {
@@ -429,32 +434,32 @@ class WLEDSegment extends IPSModule
         } elseif (is_bool($Data)) {
             return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
         } else {
-            if (IPS_GetKernelRunlevel() == KR_READY) {
+            if (IPS_GetKernelRunlevel() === KR_READY) {
                 return parent::SendDebug($Message, (string)$Data, $Format);
             }
 
-            $this->LogMessage($Message . ':' . (string)$Data, KL_DEBUG);
+            $this->LogMessage($Message . ':' . $Data, KL_DEBUG);
         }
 
-        return 0;
+        return false;
     }
 
     /**
-     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     * PrÃ¼ft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
      *
      * @param string $Ident Der Ident der Variablen.
      * @param mixed  $Value Der zu setzende Wert.
      *
      * @return void
      */
-    private function checkVariableAndSetValue(string $Ident, $Value)
+    private function checkVariableAndSetValue(string $Ident, $Value): void
     {
         if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);
         }
     }
 
-    private function HexToRGB($hexInt)
+    private function HexToRGB($hexInt): array
     {
         $arr    = [];
         $arr[0] = floor($hexInt / 65536);
@@ -464,7 +469,7 @@ class WLEDSegment extends IPSModule
         return $arr;
     }
 
-    private function RGBToHex($rgb_arr)
+    private function RGBToHex($rgb_arr): int
     {
         return $rgb_arr[0] * 256 * 256 + $rgb_arr[1] * 256 + $rgb_arr[2];
     }
@@ -480,7 +485,7 @@ class WLEDSegment extends IPSModule
         return parse_url($url, PHP_URL_HOST) ? : '';
     }
 
-    private function getData($host, $path)
+    private function getData($host, $path): array
     {
         $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
                                                                                                               'http' => ['timeout' => 2]
@@ -489,7 +494,9 @@ class WLEDSegment extends IPSModule
             return [];
         }
 
-        return json_decode($jsonData, true);
+        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
     }
 
 }
+
+

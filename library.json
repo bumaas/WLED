@@ -4,9 +4,9 @@
 	"name": "WLED Modules",  
 	"url": "kno.wled.ge",
 	"compatibility": {
-		"version": "7.0"
+		"version": "9.0"
 	},
-	"version": "1.0",
-	"build": 21,
+	"version": "1.1",
+	"build": 22,
 	"date": 1709224583
 }
