@@ -4,7 +4,14 @@
         { "type": "Label", "caption": "The following variables are optional:" },
         { "type": "CheckBox", "name": "ShowPresets", "caption": "Presets" },
         { "type": "CheckBox", "name": "ShowPlaylist", "caption": "Playlist" },
-        { "type": "CheckBox", "name": "ShowNightlight", "caption": "Nightlight" }
+        { "type": "CheckBox", "name": "ShowNightlight", "caption": "Nightlight" },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Expert",
+            "items": [
+                { "type": "CheckBox", "name": "EnableExpertDebug", "caption": "Enable extended debug output" }
+            ]
+        }
     ],
     "actions":
     [

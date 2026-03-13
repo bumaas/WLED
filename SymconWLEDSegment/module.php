@@ -1,11 +1,14 @@
 <?php /** @noinspection AutoloadingIssuesInspection */
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/ModuleDebug.php';
 
 use libs\WLEDIds;
 
 class WLEDSegment extends IPSModuleStrict
 {
+    use ModuleDebugTrait;
+
     private const string MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
 
     private const string PROP_SEGMENT_ID  = 'SegmentID';
@@ -42,7 +45,7 @@ class WLEDSegment extends IPSModuleStrict
     public function Create(): void
     {
         parent::Create();
-        $this->SendDebug(__FUNCTION__, '', 0);
+        $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyInteger(self::PROP_SEGMENT_ID, 0);
@@ -51,6 +54,7 @@ class WLEDSegment extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_SHOW_WHITE_COLOR, false);
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
+        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
 
@@ -60,11 +64,11 @@ class WLEDSegment extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht lÃ¶schen
+        // Diese Zeile nicht löschen
         parent::ApplyChanges();
-        $this->SendDebug(__FUNCTION__, '', 0);
+        $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
-        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\â€]*.*');
+        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\"]*.*');
 
         $this->RegisterVariables();
 
@@ -100,7 +104,7 @@ class WLEDSegment extends IPSModuleStrict
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
             $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
-            $this->SendDebug(__FUNCTION__, sprintf('deviceInfo: %s', json_encode($deviceInfo, JSON_THROW_ON_ERROR)), 0);
+            $this->debugExpert(__FUNCTION__, 'Device info loaded', ['deviceInfo' => $deviceInfo]);
             $wledEffects  = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
             $wledPalletes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
@@ -160,7 +164,7 @@ class WLEDSegment extends IPSModuleStrict
             json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
                         JSON_THROW_ON_ERROR)
         );
-        $this->SendDebug(__FUNCTION__, $jsonString, 0);
+        $this->debugExpert(__FUNCTION__, 'Payload', ['payload' => $jsonString]);
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
@@ -175,7 +179,7 @@ class WLEDSegment extends IPSModuleStrict
     public function ReceiveData($JSONString): string
     {
         $data = json_decode($JSONString);
-        $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
+        $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $data->Buffer]);
         $data = json_decode($data->Buffer, true);
 
 
@@ -197,13 +201,13 @@ class WLEDSegment extends IPSModuleStrict
             $this->checkVariableAndSetValue(self::VAR_IDENT_COLOR3, $this->RGBToHex($data["col"][2]));
             $this->checkVariableAndSetValue(self::VAR_IDENT_TWCOLOR3, $this->RGBToColorTemp($data["col"][2]));
 
-            if (count($data["col"][0]) > 3) { //weiÃŸkanal
+            if (count($data["col"][0]) > 3) { //weißkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE1, $data["col"][0][3]);
             }
-            if (count($data["col"][1]) > 3) { //weiÃŸkanal
+            if (count($data["col"][1]) > 3) { //weißkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE2, $data["col"][1][3]);
             }
-            if (count($data["col"][2]) > 3) { //weiÃŸkanal
+            if (count($data["col"][2]) > 3) { //weißkanal
                 $this->checkVariableAndSetValue(self::VAR_IDENT_WHITE3, $data["col"][2][3]);
             }
         }
@@ -319,7 +323,7 @@ class WLEDSegment extends IPSModuleStrict
     {
         $sendArr["seg"][] = $payload;
         $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rÃ¼ckkanal gesetzt
+        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
     }
 
     /**
@@ -344,7 +348,7 @@ class WLEDSegment extends IPSModuleStrict
             $red = ($red > 255) ? 255 : $red;
         }
 
-        // GrÃ¼n
+        // Grün
         if ($temp <= 66) {
             $green = $temp;
             $green = 99.4708025861 * log($green) - 161.1195681661;
@@ -408,44 +412,7 @@ class WLEDSegment extends IPSModuleStrict
     }
 
     /**
-     * ErgÃ¤nzt SendDebug um die MÃ¶glichkeit, Objekte und Array auszugeben.
-     *
-     * @param string $Message Nachricht fÃ¼r Data.
-     * @param mixed  $Data    Daten fÃ¼r die Ausgabe.
-     *
-     * @return int $Format Ausgabeformat fÃ¼r Strings.
-     */
-    protected function SendDebug(string $Message, $Data, $Format): bool
-    {
-        if (is_array($Data)) {
-            if (count($Data) > 25) {
-                $this->SendDebug($Message, array_slice($Data, 0, 20), 0);
-                $this->SendDebug($Message . ':CUT', '-------------CUT-----------------', 0);
-                $this->SendDebug($Message, array_slice($Data, -5, null, true), 0);
-            } else {
-                foreach ($Data as $Key => $DebugData) {
-                    $this->SendDebug($Message . ':' . $Key, $DebugData, 0);
-                }
-            }
-        } elseif (is_object($Data)) {
-            foreach ($Data as $Key => $DebugData) {
-                $this->SendDebug($Message . '->' . $Key, $DebugData, 0);
-            }
-        } elseif (is_bool($Data)) {
-            return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
-        } else {
-            if (IPS_GetKernelRunlevel() === KR_READY) {
-                return parent::SendDebug($Message, (string)$Data, $Format);
-            }
-
-            $this->LogMessage($Message . ':' . $Data, KL_DEBUG);
-        }
-
-        return false;
-    }
-
-    /**
-     * PrÃ¼ft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
      *
      * @param string $Ident Der Ident der Variablen.
      * @param mixed  $Value Der zu setzende Wert.

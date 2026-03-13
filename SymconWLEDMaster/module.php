@@ -1,11 +1,14 @@
 <?php /** @noinspection AutoloadingIssuesInspection */
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/ModuleDebug.php';
 
 use libs\WLEDIds;
 
 class WLEDMaster extends IPSModuleStrict
 {
+    use ModuleDebugTrait;
+
 
     //Properties
     private const string PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
@@ -31,12 +34,13 @@ class WLEDMaster extends IPSModuleStrict
     public function Create(): void
     {
         parent::Create();
-        $this->SendDebug(__FUNCTION__, '', 0);
+        $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyBoolean(self::PROP_SHOWNIGHTLIGHT, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOWPRESETS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOWPLAYLIST, false);
+        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
 
@@ -46,9 +50,9 @@ class WLEDMaster extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht lÃ¶schen
+        // Diese Zeile nicht löschen
         parent::ApplyChanges();
-        $this->SendDebug(__FUNCTION__, '', 0);
+        $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
         $this->RegisterVariables();
 
@@ -147,7 +151,7 @@ class WLEDMaster extends IPSModuleStrict
             json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
                         JSON_THROW_ON_ERROR)
         );
-        $this->SendDebug(__FUNCTION__, $jsonString, 0);
+        $this->debugExpert(__FUNCTION__, 'Payload', ['payload' => $jsonString]);
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
@@ -162,7 +166,7 @@ class WLEDMaster extends IPSModuleStrict
     public function ReceiveData($JSONString): string
     {
         $data = json_decode($JSONString);
-        $this->SendDebug(__FUNCTION__, $data->Buffer, 0);
+        $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $data->Buffer]);
         $data = json_decode($data->Buffer, true);
 
         //daten verarbeiten!
@@ -272,47 +276,11 @@ class WLEDMaster extends IPSModuleStrict
     private function sendAndUpdateValue(string $ident, mixed $value, array $payload): void
     {
         $this->SendData(json_encode($payload, JSON_THROW_ON_ERROR));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rÃ¼ckkanal gesetzt
+        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
     }
 
     /**
-     * ErgÃ¤nzt SendDebug um die MÃ¶glichkeit, Objekte und Array auszugeben.
-     *
-     * @param string $Message Nachricht fÃ¼r Data.
-     * @param mixed  $Data    Daten fÃ¼r die Ausgabe.
-     * @param        $Format
-     *
-     * @return bool $Format Ausgabeformat fÃ¼r Strings.
-     */
-    protected function SendDebug(string $Message, $Data, $Format): bool
-    {
-        if (is_array($Data)) {
-            if (count($Data) > 25) {
-                $this->SendDebug($Message, array_slice($Data, 0, 20), 0);
-                $this->SendDebug($Message . ':CUT', '-------------CUT-----------------', 0);
-                $this->SendDebug($Message, array_slice($Data, -5, null, true), 0);
-            } else {
-                foreach ($Data as $Key => $DebugData) {
-                    $this->SendDebug($Message . ':' . $Key, $DebugData, 0);
-                }
-            }
-        } elseif (is_object($Data)) {
-            foreach ($Data as $Key => $DebugData) {
-                $this->SendDebug($Message . '->' . $Key, $DebugData, 0);
-            }
-        } elseif (is_bool($Data)) {
-            return parent::SendDebug($Message, ($Data ? 'TRUE' : 'FALSE'), 0);
-        } elseif (IPS_GetKernelRunlevel() === KR_READY) {
-            return parent::SendDebug($Message, (string)$Data, $Format);
-        } else {
-            $this->LogMessage($Message . ':' . $Data, KL_DEBUG);
-        }
-
-        return false;
-    }
-
-    /**
-     * PrÃ¼ft, ob die angegebene Variable vorhanden ist, und setzt den Wert entsprechend.
+     * Prüft, ob die angegebene Variable vorhanden ist, und setzt den Wert entsprechend.
      *
      * @param string $Ident Der Ident der Variablen.
      * @param mixed  $Value Der zu setzende Wert.

@@ -22,7 +22,11 @@ Die Bibliothek dient zum Steuern von LED-Stripes an einem mit [WLED](http://kno.
 
 ## 2. Funktionsumfang
 
-Es werden drei Instanzen zur Verfügung gestellt:
+Es werden vier Instanzen zur Verf�gung gestellt:
+
+- __WLED Discovery__<br>
+	Findet WLED Instanzen im Netzwerk per mDNS und bietet die automatische Anlage der WLED-Instanzen an.
+
 
 - __WLED Splitter__<br>
 	Der Splitter stellt die Verbindung zwischen dem Websocket Client und den WLED Instanzen her.
@@ -32,6 +36,8 @@ Es werden drei Instanzen zur Verfügung gestellt:
 
 - __WLED Master__  
 	Zur Steuerung des Masters.
+
+Alle vier Instanzen besitzen im Konfigurationsformular einen Bereich __Expert__ mit der Option __EnableExpertDebug__ f�r erweiterte Debug-Ausgaben.
 
 Bei der Anlage der Instanzen wird – sofern noch kein WebSocket angelegt wurde – ein WebSocket unter den IO Instanzen angelegt. Dort ist der Endpunkt einzutragen, unter dem der WLED-Server erreicht werden kann.
 
@@ -103,3 +109,5 @@ Zudem stehen Funktionen zur Verfügung, um die Presets, die Playlisten, die Effe
 
   [GNU GENERAL PUBLIC LICENSE](http://www.gnu.org/licenses/)  
  
+
+

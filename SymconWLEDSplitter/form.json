@@ -1,6 +1,13 @@
 {
   "elements": [
-    {"type": "CheckBox", "name": "SyncPower", "caption": "Sync Power with Segments"}
+    {"type": "CheckBox", "name": "SyncPower", "caption": "Sync Power with Segments"},
+    {
+      "type": "ExpansionPanel",
+      "caption": "Expert",
+      "items": [
+        {"type": "CheckBox", "name": "EnableExpertDebug", "caption": "Enable extended debug output"}
+      ]
+    }
   ],
   "actions":  [
     {"type": "Button", "label": "Update profile WLED.Presets", "onClick": "IPS_RequestAction($id, 'updateProfilePresets', '');"},

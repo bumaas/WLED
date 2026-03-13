@@ -2,6 +2,8 @@
   "translations": {
     "de": {
       "Sync Power with Segments": "Synchronisiere den Einschaltzustand des Masters mit den Segmenten",
+      "Expert": "Experte",
+      "Enable extended debug output": "Erweiterte Debug-Ausgaben aktivieren",
       "Update profile WLED.Presets": "Lese die Presets neu ein",
       "Update profile WLED.Playlists": "Lese die Playlisten neu ein",
       "Update profile WLED.Effects": "Lese die Effekte neu ein",

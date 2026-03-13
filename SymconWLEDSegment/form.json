@@ -7,7 +7,14 @@
         { "type": "CheckBox", "name": "ShowPalettes", "caption": "Palettes" },
         { "type": "CheckBox", "name": "ShowChannelWhite", "caption": "Channel White" },
         { "type": "CheckBox", "name": "MoreColors", "caption": "Colors (2 + 3)" },
-        { "type": "CheckBox", "name": "ShowTemperature", "caption": "CCT" }
+        { "type": "CheckBox", "name": "ShowTemperature", "caption": "CCT" },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Expert",
+            "items": [
+                { "type": "CheckBox", "name": "EnableExpertDebug", "caption": "Enable extended debug output" }
+            ]
+        }
     ],
     "actions":
     [
