@@ -111,7 +111,12 @@ class WLEDSegment extends IPSModuleStrict
             $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
-                $this->RegisterVariableInteger("VariableEffects", $this->translate("Effects"), $wledEffects, 20);
+                $this->RegisterVariableInteger(
+                    "VariableEffects",
+                    $this->translate("Effects"),
+                    IPS_VariableProfileExists($wledEffects) ? $wledEffects : '',
+                    20
+                );
                 $this->RegisterVariableInteger(self::VAR_IDENT_EFFECTS_SPEED, $this->translate("Effect Speed"), "~Intensity.255", 21);
                 $this->RegisterVariableInteger("VariableEffectsIntensity", $this->translate("Effect Intensity"), "~Intensity.255", 22);
                 $this->EnableAction("VariableEffects");
@@ -120,7 +125,12 @@ class WLEDSegment extends IPSModuleStrict
             }
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
-                $this->RegisterVariableInteger("VariablePalettes", $this->translate("Palettes"), $wledPalettes, 23);
+                $this->RegisterVariableInteger(
+                    "VariablePalettes",
+                    $this->translate("Palettes"),
+                    IPS_VariableProfileExists($wledPalettes) ? $wledPalettes : '',
+                    23
+                );
                 $this->EnableAction("VariablePalettes");
             }
         }

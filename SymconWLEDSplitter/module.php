@@ -71,9 +71,20 @@ class WLEDSplitter extends IPSModuleStrict
         $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
         $this->SetSummary($host);
         if (!empty($host) && Sys_Ping($host, 300)) {
-            $mac          = WLEDHttp::getData($host, '/json/info')['mac'];
-            $wledEffects  = 'WLED.Effects.' . substr($mac, -4);
-            $wledPalettes = 'WLED.Palettes.' . substr($mac, -4);
+            $macSuffix = $this->getMacSuffix($host);
+            if ($macSuffix === '') {
+                $this->debugExpert(
+                    __FUNCTION__,
+                    'WLED response has no /json/info.mac; profile creation skipped',
+                    ['host' => $host],
+                    true
+                );
+                $this->SetStatus(IS_ACTIVE);
+                return;
+            }
+
+            $wledEffects  = 'WLED.Effects.' . $macSuffix;
+            $wledPalettes = 'WLED.Palettes.' . $macSuffix;
             if (!IPS_VariableProfileExists($wledEffects)) {
                 IPS_CreateVariableProfile($wledEffects, VARIABLETYPE_INTEGER);
             }
@@ -111,8 +122,18 @@ class WLEDSplitter extends IPSModuleStrict
             return;
         }
 
-        $mac         = WLEDHttp::getData($host, '/json/info')['mac'];
-        $profileName = sprintf('WLED.%s.%s', $profileType, substr($mac, -4));
+        $macSuffix = $this->getMacSuffix($host);
+        if ($macSuffix === '') {
+            $this->debugExpert(
+                __FUNCTION__,
+                'WLED response has no /json/info.mac; profile update skipped',
+                ['host' => $host, 'profileType' => $profileType],
+                true
+            );
+            return;
+        }
+
+        $profileName = sprintf('WLED.%s.%s', $profileType, $macSuffix);
 
         if (!IPS_VariableProfileExists($profileName)) {
             IPS_CreateVariableProfile($profileName, VARIABLETYPE_INTEGER);
@@ -123,6 +144,17 @@ class WLEDSplitter extends IPSModuleStrict
         if ($profileData) {
             $this->updateAssociations($profileName, $profileData);
         }
+    }
+
+    private function getMacSuffix(string $host): string
+    {
+        $info = WLEDHttp::getData($host, '/json/info');
+        $mac  = (string)($info['mac'] ?? '');
+        if ($mac === '') {
+            return '';
+        }
+
+        return substr($mac, -4);
     }
 
 
