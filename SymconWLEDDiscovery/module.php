@@ -183,7 +183,28 @@ class WLEDDiscovery extends IPSModuleStrict
     private function mapDevicesToForm(array $foundDevices, array $existingMasterIDs, array $existingSplitterIDs): array
     {
         $formValues = [];
-        $hostToId   = [];
+        $hostToId   = $this->buildExistingInstanceHostMap($existingMasterIDs, $existingSplitterIDs);
+
+        foreach ($foundDevices as $device) {
+            $host       = $device['host'];
+            $instanceID = $hostToId[$host] ?? 0;
+            if (isset($hostToId[$host])) {
+                unset($hostToId[$host]);
+            }
+
+            $formValues[] = $this->buildFoundDeviceRow($device, $instanceID);
+        }
+
+        foreach ($hostToId as $host => $id) {
+            $formValues[] = $this->buildOfflineDeviceRow($host, $id);
+        }
+
+        return $formValues;
+    }
+
+    private function buildExistingInstanceHostMap(array $existingMasterIDs, array $existingSplitterIDs): array
+    {
+        $hostToId = [];
 
         // Fallback mapping: Splitter per Host
         foreach ($existingSplitterIDs as $id) {
@@ -205,59 +226,57 @@ class WLEDDiscovery extends IPSModuleStrict
             }
         }
 
-        foreach ($foundDevices as $device) {
-            $host       = $device['host'];
-            $instanceID = $hostToId[$host] ?? 0;
-            if (isset($hostToId[$host])) {
-                unset($hostToId[$host]);
-            }
+        return $hostToId;
+    }
 
-            $formValues[] = [
-                'name'       => $device['name'],
-                'host'       => $host,
-                'version'    => $device['version'],
-                'url'        => $device['url'],
-                'instanceID' => $instanceID,
-                'create'     => [
-                    [
-                        'moduleID'      => WLEDIds::MODULE_WLED_MASTER,
-                        'configuration' => new stdClass(),
-                        'name'          => sprintf('WLED Master (%s)', $device['name'])
-                    ],
-                    [
-                        'moduleID'      => WLEDIds::MODULE_WLED_SPLITTER,
-                        'configuration' => new stdClass(),
-                        'name'          => sprintf('WLED Splitter (%s)', $device['name'])
-                    ],
-                    [
-                        'moduleID'      => WLEDIds::MODULE_WEBSOCKETCLIENT,
-                        'configuration' => [
-                            'Active' => true,
-                            'URL'    => $device['url']
-                        ],
-                        'name'          => sprintf('WebSocket Client (%s)', $device['name'])
-                    ]
-                ]
-            ];
-        }
+    private function buildFoundDeviceRow(array $device, int $instanceID): array
+    {
+        return [
+            'name'       => $device['name'],
+            'host'       => $device['host'],
+            'version'    => $device['version'],
+            'url'        => $device['url'],
+            'instanceID' => $instanceID,
+            'create'     => $this->buildCreateChain($device)
+        ];
+    }
 
-        foreach ($hostToId as $host => $id) {
-            $displayHost = $host;
-            if (str_starts_with($host, '__missing__')) {
-                $displayHost = $this->Translate('unknown');
-            }
+    private function buildCreateChain(array $device): array
+    {
+        return [
+            [
+                'moduleID'      => WLEDIds::MODULE_WLED_MASTER,
+                'configuration' => new stdClass(),
+                'name'          => sprintf('WLED Master (%s)', $device['name'])
+            ],
+            [
+                'moduleID'      => WLEDIds::MODULE_WLED_SPLITTER,
+                'configuration' => new stdClass(),
+                'name'          => sprintf('WLED Splitter (%s)', $device['name'])
+            ],
+            [
+                'moduleID'      => WLEDIds::MODULE_WEBSOCKETCLIENT,
+                'configuration' => [
+                    'Active' => true,
+                    'URL'    => $device['url']
+                ],
+                'name'          => sprintf('WebSocket Client (%s)', $device['name'])
+            ]
+        ];
+    }
 
-            $formValues[] = [
-                'name'       => IPS_GetName($id),
-                'host'       => $displayHost,
-                'version'    => $this->Translate('unknown'),
-                'url'        => $this->Translate('offline'),
-                'instanceID' => $id,
-                'create'     => []
-            ];
-        }
+    private function buildOfflineDeviceRow(string $host, int $id): array
+    {
+        $displayHost = str_starts_with($host, '__missing__') ? $this->Translate('unknown') : $host;
 
-        return $formValues;
+        return [
+            'name'       => IPS_GetName($id),
+            'host'       => $displayHost,
+            'version'    => $this->Translate('unknown'),
+            'url'        => $this->Translate('offline'),
+            'instanceID' => $id,
+            'create'     => []
+        ];
     }
 
     private function getMasterHost(int $masterId): string

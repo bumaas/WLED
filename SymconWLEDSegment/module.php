@@ -1,8 +1,10 @@
 <?php /** @noinspection AutoloadingIssuesInspection */
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
+use libs\WLEDHttp;
 use libs\WLEDIds;
 
 class WLEDSegment extends IPSModuleStrict
@@ -15,7 +17,7 @@ class WLEDSegment extends IPSModuleStrict
     private const string PROP_MORE_COLORS = 'MoreColors';
     private const string PROP_SHOW_CCT    = 'ShowTemperature';
     private const string PROP_SHOW_EFFECTS = 'ShowEffects';
-    private const string PROP_SHOW_PALLETS = 'ShowPalettes';
+    private const string PROP_SHOW_PALETTES = 'ShowPalettes';
     private const string PROP_SHOW_WHITE_COLOR = 'ShowChannelWhite';
 
     //Variables
@@ -50,7 +52,7 @@ class WLEDSegment extends IPSModuleStrict
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyInteger(self::PROP_SEGMENT_ID, 0);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_EFFECTS, false);
-        $this->RegisterPropertyBoolean(self::PROP_SHOW_PALLETS, false);
+        $this->RegisterPropertyBoolean(self::PROP_SHOW_PALETTES, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_WHITE_COLOR, false);
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
@@ -82,8 +84,8 @@ class WLEDSegment extends IPSModuleStrict
     private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
-        $host       = $this->getHostFromIOInstance();
-        $deviceInfo = $this->getData($host, '/json/info');
+        $host       = WLEDHttp::getHostFromDevice($this->InstanceID);
+        $deviceInfo = WLEDHttp::getData($host, '/json/info', 2);
         if (count($deviceInfo)) {
             $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
             $this->SetSummary(sprintf('%s:%s', $deviceInfo['name'], $this->ReadPropertyInteger(self::PROP_SEGMENT_ID)));
@@ -102,11 +104,11 @@ class WLEDSegment extends IPSModuleStrict
             $this->EnableAction(self::VAR_IDENT_TEMPERATURE);
         }
 
-        if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
+        if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
             $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
             $this->debugExpert(__FUNCTION__, 'Device info loaded', ['deviceInfo' => $deviceInfo]);
             $wledEffects  = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
-            $wledPalletes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
+            $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
                 $this->RegisterVariableInteger("VariableEffects", $this->translate("Effects"), $wledEffects, 20);
@@ -117,8 +119,8 @@ class WLEDSegment extends IPSModuleStrict
                 $this->EnableAction("VariableEffectsIntensity");
             }
 
-            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALLETS)) {
-                $this->RegisterVariableInteger("VariablePalettes", $this->translate("Palletes"), $wledPalletes, 23);
+            if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
+                $this->RegisterVariableInteger("VariablePalettes", $this->translate("Palettes"), $wledPalettes, 23);
                 $this->EnableAction("VariablePalettes");
             }
         }
@@ -232,16 +234,22 @@ class WLEDSegment extends IPSModuleStrict
 
     public function RequestAction($Ident, $Value): void
     {
-        $segArr       = [];
-        $segArr["id"] = $this->ReadPropertyInteger(self::PROP_SEGMENT_ID);
+        $segArr = $this->buildSegmentPayloadForAction((string)$Ident, $Value);
+        $this->sendAndUpdateValue($segArr);
+    }
 
-        switch ($Ident) {
-            case "VariablePower":
-                $segArr["on"] = $Value;
+    private function buildSegmentPayloadForAction(string $ident, mixed $value): array
+    {
+        $segArr       = [];
+        $segArr['id'] = $this->ReadPropertyInteger(self::PROP_SEGMENT_ID);
+
+        switch ($ident) {
+            case 'VariablePower':
+                $segArr['on'] = $value;
                 break;
 
             case self::VAR_IDENT_BRIGHTNESS:
-                $segArr["bri"] = $Value;
+                $segArr['bri'] = $value;
                 break;
 
             case self::VAR_IDENT_COLOR1:
@@ -250,62 +258,60 @@ class WLEDSegment extends IPSModuleStrict
             case self::VAR_IDENT_WHITE1:
             case self::VAR_IDENT_WHITE2:
             case self::VAR_IDENT_WHITE3:
-
-                $segArr["col"][0] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR1 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR1));
+                $segArr['col'][0] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR1 ? $value : $this->GetValue(self::VAR_IDENT_COLOR1));
                 if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                    $segArr["col"][0][3] = $this->GetValue(self::VAR_IDENT_WHITE1);
+                    $segArr['col'][0][3] = $this->GetValue(self::VAR_IDENT_WHITE1);
                 }
                 if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-                    $segArr["col"][1] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR2 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR2));
-                    $segArr["col"][2] = $this->HexToRGB($Ident === self::VAR_IDENT_COLOR3 ? $Value : $this->GetValue(self::VAR_IDENT_COLOR3));
+                    $segArr['col'][1] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR2 ? $value : $this->GetValue(self::VAR_IDENT_COLOR2));
+                    $segArr['col'][2] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR3 ? $value : $this->GetValue(self::VAR_IDENT_COLOR3));
                     if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                        $segArr["col"][1][3] = $this->GetValue(self::VAR_IDENT_WHITE2);
-                        $segArr["col"][2][3] = $this->GetValue(self::VAR_IDENT_WHITE3);
+                        $segArr['col'][1][3] = $this->GetValue(self::VAR_IDENT_WHITE2);
+                        $segArr['col'][2][3] = $this->GetValue(self::VAR_IDENT_WHITE3);
                     }
                 } else {
-                    $segArr["col"][1] = [0, 0, 0];
-                    $segArr["col"][2] = [0, 0, 0];
+                    $segArr['col'][1] = [0, 0, 0];
+                    $segArr['col'][2] = [0, 0, 0];
                 }
-
                 break;
 
-            case "VariableTemperature":
-                $segArr["cct"] = $Value;
+            case 'VariableTemperature':
+                $segArr['cct'] = $value;
                 break;
 
-            case "VariablePalettes":
-                $segArr["pal"] = $Value;
+            case 'VariablePalettes':
+                $segArr['pal'] = $value;
                 break;
 
-            case "VariableEffects":
-                $segArr["fx"] = $Value;
+            case 'VariableEffects':
+                $segArr['fx'] = $value;
                 break;
 
-            case "VariableEffectsSpeed":
-                $segArr["sx"] = $Value;
+            case 'VariableEffectsSpeed':
+                $segArr['sx'] = $value;
                 break;
 
-            case "VariableEffectsIntensity":
-                $segArr["ix"] = $Value;
+            case 'VariableEffectsIntensity':
+                $segArr['ix'] = $value;
                 break;
 
             case self::VAR_IDENT_TWCOLOR1:
-                $segArr['col'][0] = $this->colorTempToRGB($Value);
+                $segArr['col'][0] = $this->colorTempToRGB($value);
                 break;
 
             case self::VAR_IDENT_TWCOLOR2:
-                $segArr['col'][1] = $this->colorTempToRGB($Value);
+                $segArr['col'][1] = $this->colorTempToRGB($value);
                 break;
 
             case self::VAR_IDENT_TWCOLOR3:
-                $segArr['col'][2] = $this->colorTempToRGB($Value);
+                $segArr['col'][2] = $this->colorTempToRGB($value);
                 break;
 
             default:
-                throw new RuntimeException("Invalid Ident");
+                throw new RuntimeException('Invalid Ident');
         }
 
-        $this->sendAndUpdateValue($segArr);
+        return $segArr;
     }
 
     /**
@@ -436,47 +442,6 @@ class WLEDSegment extends IPSModuleStrict
     private function RGBToHex($rgb_arr): int
     {
         return $rgb_arr[0] * 256 * 256 + $rgb_arr[1] * 256 + $rgb_arr[2];
-    }
-
-    private function getParentInstanceId(int $instId): int
-    {
-        $instance = @IPS_GetInstance($instId);
-        if (!is_array($instance)) {
-            return 0;
-        }
-        return (int)($instance['ConnectionID'] ?? 0);
-    }
-
-    private function getHostFromIOInstance(): string
-    {
-        $splitterId = $this->getParentInstanceId($this->InstanceID);
-        if ($splitterId <= 0) {
-            return '';
-        }
-
-        $ioId = $this->getParentInstanceId($splitterId);
-        if ($ioId <= 0) {
-            return '';
-        }
-
-        $url = (string)@IPS_GetProperty($ioId, 'URL');
-        if ($url === '') {
-            return '';
-        }
-
-        return parse_url($url, PHP_URL_HOST) ? : '';
-    }
-
-    private function getData($host, $path): array
-    {
-        $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
-                                                                                                              'http' => ['timeout' => 2]
-                                                                                                          ]));
-        if ($jsonData === false) {
-            return [];
-        }
-
-        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
     }
 
 }

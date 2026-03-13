@@ -53,7 +53,7 @@ Dort ist der Endpunkt einzutragen, unter dem der WLED-Server erreichbar ist:
 - Update profile WLED.Presets
 - Update profile WLED.Playlists
 - Update profile WLED.Effects
-- Update profile WLED.Pallets
+- Update profile WLED.Palettes
 - Expert: EnableExpertDebug
 
 ### WLED Master

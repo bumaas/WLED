@@ -1,8 +1,10 @@
 <?php
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
+use libs\WLEDHttp;
 use libs\WLEDIds;
 
 /** @noinspection AutoloadingIssuesInspection */
@@ -66,10 +68,10 @@ class WLEDSplitter extends IPSModuleStrict
 
     private function processHostData(): void
     {
-        $host = $this->getHostFromParentInstance();
+        $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
         $this->SetSummary($host);
         if (!empty($host) && Sys_Ping($host, 300)) {
-            $mac          = $this->getData($host, '/json/info')['mac'];
+            $mac          = WLEDHttp::getData($host, '/json/info')['mac'];
             $wledEffects  = 'WLED.Effects.' . substr($mac, -4);
             $wledPalettes = 'WLED.Palettes.' . substr($mac, -4);
             if (!IPS_VariableProfileExists($wledEffects)) {
@@ -78,9 +80,9 @@ class WLEDSplitter extends IPSModuleStrict
             if (!IPS_VariableProfileExists($wledPalettes)) {
                 IPS_CreateVariableProfile($wledPalettes, VARIABLETYPE_INTEGER);
             }
-            $wledEffectsArray = $this->getData($host, "/json/eff");
+            $wledEffectsArray = WLEDHttp::getData($host, "/json/eff");
             $this->updateAssociations($wledEffects, $wledEffectsArray);
-            $wledPaletteArray = $this->getData($host, "/json/pal");
+            $wledPaletteArray = WLEDHttp::getData($host, "/json/pal");
             $this->updateAssociations($wledPalettes, $wledPaletteArray);
         }
         $this->SetStatus(IS_ACTIVE);
@@ -91,6 +93,7 @@ class WLEDSplitter extends IPSModuleStrict
         $this->debugExpert(__FUNCTION__, 'Action requested', ['ident' => $Ident, 'value' => $Value]);
         switch ($Ident) {
             case 'updateProfileEffects':
+            case 'updateProfilePalettes':
             case 'updateProfilePallets':
             case 'updateProfilePresets':
             case 'updateProfilePlaylists':
@@ -103,12 +106,12 @@ class WLEDSplitter extends IPSModuleStrict
 
     private function processProfileUpdate(string $profileType): void
     {
-        $host = $this->getHostFromParentInstance();
+        $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
         if (empty($host) || !Sys_Ping($host, 300)) {
             return;
         }
 
-        $mac         = $this->getData($host, '/json/info')['mac'];
+        $mac         = WLEDHttp::getData($host, '/json/info')['mac'];
         $profileName = sprintf('WLED.%s.%s', $profileType, substr($mac, -4));
 
         if (!IPS_VariableProfileExists($profileName)) {
@@ -127,12 +130,13 @@ class WLEDSplitter extends IPSModuleStrict
     {
         switch ($profileType) {
             case 'Effects':
-                return $this->getData($host, "/json/eff");
-            case 'Pallets':
-                return $this->getData($host, "/json/pal");
+                return WLEDHttp::getData($host, "/json/eff");
+            case 'Pallets': // backward compatibility (legacy typo)
+            case 'Palettes':
+                return WLEDHttp::getData($host, "/json/pal");
             case 'Presets':
             case 'Playlists':
-                $presets  = $this->getData($host, '/presets.json');
+                $presets  = WLEDHttp::getData($host, '/presets.json');
                 $data[-1] = $this->translate('-not active-');
                 foreach ($presets as $key => $preset) {
                     if (isset($preset['n'], $preset[($profileType === 'Presets' ? 'mainseg' : 'playlist')])) {
@@ -143,42 +147,6 @@ class WLEDSplitter extends IPSModuleStrict
             default:
                 return null;
         }
-    }
-
-    private function getParentInstanceId(int $instId): int
-    {
-        $instance = @IPS_GetInstance($instId);
-        if (!is_array($instance)) {
-            return 0;
-        }
-        return (int)($instance['ConnectionID'] ?? 0);
-    }
-
-    private function getHostFromParentInstance(): string
-    {
-        $parentId = $this->getParentInstanceId($this->InstanceID);
-        if ($parentId <= 0) {
-            return '';
-        }
-
-        $url = (string)@IPS_GetProperty($parentId, 'URL');
-        if ($url === '') {
-            return '';
-        }
-
-        return parse_url($url, PHP_URL_HOST) ? : '';
-    }
-
-    private function getData($host, $path): array
-    {
-        $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
-                                                                                                              'http' => ['timeout' => 1]
-                                                                                                          ]));
-        if ($jsonData === false) {
-            return [];
-        }
-
-        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
     }
 
     private function updateAssociations(string $profileName, array $dataArray): void

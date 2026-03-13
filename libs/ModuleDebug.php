@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 trait ModuleDebugTrait
 {
+    // These categories are always logged to keep lifecycle and control-flow traceable.
     private const array BASIC_DEBUG_CATEGORIES = [
         'ApplyChanges',
         'Config',
@@ -14,6 +15,8 @@ trait ModuleDebugTrait
         'UpdateCache'
     ];
 
+    // $always=true forces logging regardless of category and EnableExpertDebug setting.
+    // EnableExpertDebug=false logs only BASIC_DEBUG_CATEGORIES to keep logs concise.
     private function debugExpert(string $category, string $message, array $context = [], bool $always = false): void
     {
         $expertDebugEnabled = @($this->ReadPropertyBoolean('EnableExpertDebug'));

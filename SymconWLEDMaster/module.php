@@ -1,8 +1,10 @@
 <?php /** @noinspection AutoloadingIssuesInspection */
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
+use libs\WLEDHttp;
 use libs\WLEDIds;
 
 class WLEDMaster extends IPSModuleStrict
@@ -66,8 +68,8 @@ class WLEDMaster extends IPSModuleStrict
     private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
-        $host       = $this->getHostFromIOInstance();
-        $deviceInfo = $this->getData($host, '/json/info');
+        $host       = WLEDHttp::getHostFromDevice($this->InstanceID);
+        $deviceInfo = WLEDHttp::getData($host, '/json/info', 2);
         if (count($deviceInfo)) {
             $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
             $this->SetSummary(sprintf('%s:Master', $deviceInfo['name']));
@@ -225,43 +227,49 @@ class WLEDMaster extends IPSModuleStrict
 
     public function RequestAction($Ident, $Value): void
     {
+        $sendArr = $this->buildPayloadForAction((string)$Ident, $Value);
+        $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
+    }
+
+    private function buildPayloadForAction(string $ident, mixed $value): array
+    {
         $sendArr = [];
 
-        switch ($Ident) {
+        switch ($ident) {
             case self::VAR_IDENT_POWER:
-                $sendArr["on"] = $Value;
+                $sendArr['on'] = $value;
                 break;
             case self::VAR_IDENT_BRIGHTNESS:
-                $sendArr["bri"] = $Value;
+                $sendArr['bri'] = $value;
                 break;
             case self::VAR_IDENT_TRANSITION:
-                $sendArr["transition"] = (int)round(((float)$Value) * 10);
+                $sendArr['transition'] = (int)round(((float)$value) * 10);
                 // Ask WLED for a state response after setting transition.
-                $sendArr["v"] = true;
+                $sendArr['v'] = true;
                 break;
             case self::VAR_IDENT_PRESET:
-                $sendArr["ps"] = $Value;
+                $sendArr['ps'] = $value;
                 break;
             case self::VAR_IDENT_PLAYLIST:
-                $sendArr["pl"] = $Value;
+                $sendArr['pl'] = $value;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_ON:
-                $sendArr["nl"]["on"] = $Value;
+                $sendArr['nl']['on'] = $value;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_DURATION:
-                $sendArr["nl"]["dur"] = $Value;
+                $sendArr['nl']['dur'] = $value;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_MODE:
-                $sendArr["nl"]["mode"] = $Value;
+                $sendArr['nl']['mode'] = $value;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS:
-                $sendArr["nl"]["tbri"] = $Value;
+                $sendArr['nl']['tbri'] = $value;
                 break;
             default:
-                throw new RuntimeException("Invalid Ident");
+                throw new RuntimeException('Invalid Ident');
         }
 
-        $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
+        return $sendArr;
     }
 
     /**
@@ -279,48 +287,5 @@ class WLEDMaster extends IPSModuleStrict
         }
     }
 
-    private function getParentInstanceId(int $instId): int
-    {
-        $instance = @IPS_GetInstance($instId);
-        if (!is_array($instance)) {
-            return 0;
-        }
-        return (int)($instance['ConnectionID'] ?? 0);
-    }
-
-    private function getHostFromIOInstance(): string
-    {
-        $splitterId = $this->getParentInstanceId($this->InstanceID);
-        if ($splitterId <= 0) {
-            return '';
-        }
-
-        $ioId = $this->getParentInstanceId($splitterId);
-        if ($ioId <= 0) {
-            return '';
-        }
-
-        $url = (string)@IPS_GetProperty($ioId, 'URL');
-        if ($url === '') {
-            return '';
-        }
-
-        return parse_url($url, PHP_URL_HOST) ? : '';
-    }
-
-    private function getData($host, $path): array
-    {
-        $jsonData = @file_get_contents(sprintf('http://%s%s', $host, $path), false, stream_context_create([
-                                                                                                              'http' => ['timeout' => 2]
-                                                                                                          ]));
-        if ($jsonData === false) {
-            return [];
-        }
-
-        return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
-    }
-
 }
-
-
 
