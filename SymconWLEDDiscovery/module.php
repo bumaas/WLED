@@ -78,9 +78,10 @@ class WLEDDiscovery extends IPSModuleStrict
     private function performDiscovery(): void
     {
         $this->debugExpert(__FUNCTION__, 'Starting discovery');
+        $existingMasters   = IPS_GetInstanceListByModuleID(WLEDIds::MODULE_WLED_MASTER);
         $existingSplitters = IPS_GetInstanceListByModuleID(WLEDIds::MODULE_WLED_SPLITTER);
         $foundDevices      = $this->scanNetworkForDevices();
-        $formValues        = $this->mapDevicesToForm($foundDevices, $existingSplitters);
+        $formValues        = $this->mapDevicesToForm($foundDevices, $existingMasters, $existingSplitters);
 
         $jsonValues = json_encode($formValues, JSON_THROW_ON_ERROR);
         $this->debugExpert(__FUNCTION__, 'Discovery finished', ['devices' => count($formValues)]);
@@ -179,17 +180,28 @@ class WLEDDiscovery extends IPSModuleStrict
         }
     }
 
-    private function mapDevicesToForm(array $foundDevices, array $existingSplitterIDs): array
+    private function mapDevicesToForm(array $foundDevices, array $existingMasterIDs, array $existingSplitterIDs): array
     {
         $formValues = [];
         $hostToId   = [];
 
+        // Fallback mapping: Splitter per Host
         foreach ($existingSplitterIDs as $id) {
             $host = $this->getSplitterHost($id);
             if ($host !== '') {
                 $hostToId[$host] = $id;
             } else {
                 $hostToId['__missing__' . $id] = $id;
+            }
+        }
+
+        // Preferred mapping: Master overrides Splitter per Host
+        foreach ($existingMasterIDs as $id) {
+            $host = $this->getMasterHost($id);
+            if ($host !== '') {
+                $hostToId[$host] = $id;
+            } else {
+                $hostToId['__missing__m' . $id] = $id;
             }
         }
 
@@ -246,6 +258,21 @@ class WLEDDiscovery extends IPSModuleStrict
         }
 
         return $formValues;
+    }
+
+    private function getMasterHost(int $masterId): string
+    {
+        $master = @IPS_GetInstance($masterId);
+        if (!is_array($master)) {
+            return '';
+        }
+
+        $splitterId = (int)($master['ConnectionID'] ?? 0);
+        if ($splitterId <= 0) {
+            return '';
+        }
+
+        return $this->getSplitterHost($splitterId);
     }
 
     private function getSplitterHost(int $splitterId): string

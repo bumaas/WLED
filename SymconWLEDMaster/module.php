@@ -235,7 +235,9 @@ class WLEDMaster extends IPSModuleStrict
                 $sendArr["bri"] = $Value;
                 break;
             case self::VAR_IDENT_TRANSITION:
-                $sendArr["transition"] = $Value * 10;
+                $sendArr["transition"] = (int)round(((float)$Value) * 10);
+                // Ask WLED for a state response after setting transition.
+                $sendArr["v"] = true;
                 break;
             case self::VAR_IDENT_PRESET:
                 $sendArr["ps"] = $Value;
@@ -319,5 +321,6 @@ class WLEDMaster extends IPSModuleStrict
     }
 
 }
+
 
 

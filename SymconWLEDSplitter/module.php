@@ -36,10 +36,10 @@ class WLEDSplitter extends IPSModuleStrict
 
         if (!IPS_VariableProfileExists("WLED.Transition")) {
             IPS_CreateVariableProfile("WLED.Transition", VARIABLETYPE_FLOAT);
-            IPS_SetVariableProfileValues("WLED.Transition", 0.0, 25.5, 0.1);
-            IPS_SetVariableProfileDigits("WLED.Transition", 1);
-            IPS_SetVariableProfileText("WLED.Transition", "", " s");
         }
+        IPS_SetVariableProfileValues("WLED.Transition", 0.0, 6553.5, 0.1);
+        IPS_SetVariableProfileDigits("WLED.Transition", 1);
+        IPS_SetVariableProfileText("WLED.Transition", "", " s");
 
         if (!IPS_VariableProfileExists("WLED.NightlightDuration")) {
             IPS_CreateVariableProfile("WLED.NightlightDuration", VARIABLETYPE_INTEGER);
