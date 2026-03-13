@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
 
-//use libs\WLEDIds;
+use libs\WLEDIds;
 
 /** @noinspection AutoloadingIssuesInspection */
 
