@@ -1,0 +1,12 @@
+{
+  "id":                 "{B1703D33-0B1E-41F7-8C85-3A9BBA2D6B91}",
+  "name":               "WLED Discovery",
+  "type":               5,
+  "vendor":             "WLED",
+  "aliases":            [],
+  "parentRequirements": [],
+  "childRequirements":  [],
+  "implemented":        [],
+  "prefix":             "WLED",
+  "url":                "https://github.com/bumaas/WLED/blob/master/README.md"
+}
