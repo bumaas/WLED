@@ -64,7 +64,8 @@ class WLEDDiscovery extends IPSModuleStrict
         if (!$searchActive) {
             $this->debugExpert(__FUNCTION__, 'Start auto discovery timer');
             $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(true, JSON_THROW_ON_ERROR));
-            $this->SetTimerInterval(self::TIMER_LOAD, 250);
+            // Timer-basiert, damit die Form ohne blockierenden Netzwerkscan schnell geöffnet wird.
+            $this->SetTimerInterval(self::TIMER_LOAD, 1000);
         }
 
         $elements = $this->formElements();
@@ -164,8 +165,8 @@ class WLEDDiscovery extends IPSModuleStrict
     private function probeWledInfo(string $host): array
     {
         $jsonData = @file_get_contents(sprintf('http://%s/json/info', $host), false, stream_context_create([
-                                                                                                                   'http' => ['timeout' => 1]
-                                                                                                               ]));
+                                                                                                               'http' => ['timeout' => 1]
+                                                                                                           ]));
         if ($jsonData === false) {
             return [];
         }
@@ -207,12 +208,9 @@ class WLEDDiscovery extends IPSModuleStrict
                 'instanceID' => $instanceID,
                 'create'     => [
                     [
-                        'moduleID'      => WLEDIds::MODULE_WEBSOCKETCLIENT,
-                        'configuration' => [
-                            'URL'  => $device['url'],
-                            'Open' => true
-                        ],
-                        'name'          => sprintf('WebSocket Client (%s)', $device['name'])
+                        'moduleID'      => WLEDIds::MODULE_WLED_MASTER,
+                        'configuration' => new stdClass(),
+                        'name'          => sprintf('WLED Master (%s)', $device['name'])
                     ],
                     [
                         'moduleID'      => WLEDIds::MODULE_WLED_SPLITTER,
@@ -220,16 +218,12 @@ class WLEDDiscovery extends IPSModuleStrict
                         'name'          => sprintf('WLED Splitter (%s)', $device['name'])
                     ],
                     [
-                        'moduleID'      => WLEDIds::MODULE_WLED_MASTER,
-                        'configuration' => new stdClass(),
-                        'name'          => sprintf('WLED Master (%s)', $device['name'])
-                    ],
-                    [
-                        'moduleID'      => WLEDIds::MODULE_WLED_SEGMENT,
+                        'moduleID'      => WLEDIds::MODULE_WEBSOCKETCLIENT,
                         'configuration' => [
-                            'SegmentID' => 0
+                            'Active' => true,
+                            'URL'    => $device['url']
                         ],
-                        'name'          => sprintf('WLED Segment 0 (%s)', $device['name'])
+                        'name'          => sprintf('WebSocket Client (%s)', $device['name'])
                     ]
                 ]
             ];

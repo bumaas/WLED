@@ -178,9 +178,9 @@ class WLEDSegment extends IPSModuleStrict
 
     public function ReceiveData($JSONString): string
     {
-        $data = json_decode($JSONString);
+        $data = json_decode($JSONString, false, 512, JSON_THROW_ON_ERROR);
         $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $data->Buffer]);
-        $data = json_decode($data->Buffer, true);
+        $data = json_decode($data->Buffer, true, 512, JSON_THROW_ON_ERROR);
 
 
         //daten verarbeiten!
@@ -305,25 +305,22 @@ class WLEDSegment extends IPSModuleStrict
                 throw new RuntimeException("Invalid Ident");
         }
 
-        $this->sendAndUpdateValue($Ident, $Value, $segArr);
+        $this->sendAndUpdateValue($segArr);
     }
 
     /**
      * Sends data and updates the value.
      *
-     * @param string $ident   The identifier of the value.
-     * @param mixed  $value   The value to be set.
-     * @param array  $payload The payload to be sent.
+     * @param array $payload The payload to be sent.
      *
      * @return void
      * @throws \JsonException
      * @throws \JsonException
      */
-    private function sendAndUpdateValue(string $ident, mixed $value, array $payload): void
+    private function sendAndUpdateValue(array $payload): void
     {
         $sendArr["seg"][] = $payload;
         $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
     }
 
     /**
@@ -412,14 +409,14 @@ class WLEDSegment extends IPSModuleStrict
     }
 
     /**
-     * Prüft, ob die angegebene Variable vorhanden ist und setzt den Wert entsprechend.
+     * Prüft, ob die angegebene Variable vorhanden ist, und setzt den Wert entsprechend.
      *
      * @param string $Ident Der Ident der Variablen.
      * @param mixed  $Value Der zu setzende Wert.
      *
      * @return void
      */
-    private function checkVariableAndSetValue(string $Ident, $Value): void
+    private function checkVariableAndSetValue(string $Ident, mixed $Value): void
     {
         if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);

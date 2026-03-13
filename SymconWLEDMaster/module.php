@@ -165,9 +165,9 @@ class WLEDMaster extends IPSModuleStrict
 
     public function ReceiveData($JSONString): string
     {
-        $data = json_decode($JSONString);
+        $data = json_decode($JSONString, false, 512, JSON_THROW_ON_ERROR);
         $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $data->Buffer]);
-        $data = json_decode($data->Buffer, true);
+        $data = json_decode($data->Buffer, true, 512, JSON_THROW_ON_ERROR);
 
         //daten verarbeiten!
         if (array_key_exists("on", $data)) {
@@ -259,24 +259,7 @@ class WLEDMaster extends IPSModuleStrict
                 throw new RuntimeException("Invalid Ident");
         }
 
-        $this->sendAndUpdateValue($Ident, $Value, $sendArr);
-    }
-
-    /**
-     * Sends data and updates the value.
-     *
-     * @param string $ident   The identifier of the value.
-     * @param mixed  $value   The value to be set.
-     * @param array  $payload The payload to be sent.
-     *
-     * @return void
-     * @throws \JsonException
-     * @throws \JsonException
-     */
-    private function sendAndUpdateValue(string $ident, mixed $value, array $payload): void
-    {
-        $this->SendData(json_encode($payload, JSON_THROW_ON_ERROR));
-        //        $this->SetValue($ident, $value); auskommentiert, da durch rückkanal gesetzt
+        $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
     }
 
     /**
@@ -292,21 +275,6 @@ class WLEDMaster extends IPSModuleStrict
         if (@$this->GetIDForIdent($Ident)) {
             $this->setValue($Ident, $Value);
         }
-    }
-
-    private function HexToRGB($hexInt): array
-    {
-        $arr    = [];
-        $arr[0] = floor($hexInt / 65536);
-        $arr[1] = floor(($hexInt - ($arr[0] * 65536)) / 256);
-        $arr[2] = $hexInt - ($arr[1] * 256) - ($arr[0] * 65536);
-
-        return $arr;
-    }
-
-    private function RGBToHex($rgb_arr): int
-    {
-        return $rgb_arr[0] * 256 * 256 + $rgb_arr[1] * 256 + $rgb_arr[2];
     }
 
     private function getParentInstanceId(int $instId): int
