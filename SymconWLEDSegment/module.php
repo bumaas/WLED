@@ -98,7 +98,7 @@ class WLEDSegment extends IPSModuleStrict
         $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_CCT)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, $this->translate("CCT"), "WLED.Temperature", 11);
+            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, $this->translate("CCT"), "~Intensity.255", 11);
             $this->EnableAction(self::VAR_IDENT_TEMPERATURE);
         }
 

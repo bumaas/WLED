@@ -34,12 +34,6 @@ class WLEDSplitter extends IPSModuleStrict
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
-        if (!IPS_VariableProfileExists("WLED.Temperature")) {
-            IPS_CreateVariableProfile("WLED.Temperature", VARIABLETYPE_INTEGER);
-            IPS_SetVariableProfileValues("WLED.Temperature", 1900, 10091, 1);
-            IPS_SetVariableProfileText("WLED.Temperature", "", " %");
-        }
-
         if (!IPS_VariableProfileExists("WLED.Transition")) {
             IPS_CreateVariableProfile("WLED.Transition", VARIABLETYPE_FLOAT);
             IPS_SetVariableProfileValues("WLED.Transition", 0.0, 25.5, 0.1);
@@ -284,13 +278,6 @@ class WLEDSplitter extends IPSModuleStrict
         }
         $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $buffer]);
         $data = json_decode($buffer, true, 512, JSON_THROW_ON_ERROR);
-
-        /*
-        if (array_key_exists("seg", $data) && is_array($data["seg"]) && count($data["seg"]) > 0 && $data["seg"][0]["on"] === true) {
-            // wenn segment eingeschaltet wird, dann wled mit einschalten
-            $this->SendData('{"on":true}'); //todo: auskommentiert da die app das nicht so macht. eventuell als Option verfügbar machen
-        }
-        */
 
         $this->SendData(json_encode($data, JSON_THROW_ON_ERROR));
         return '';
