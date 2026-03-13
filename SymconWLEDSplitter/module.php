@@ -147,12 +147,25 @@ class WLEDSplitter extends IPSModuleStrict
 
     private function getParentInstanceId(int $instId): int
     {
-        return IPS_GetInstance($instId)['ConnectionID'];
+        $instance = @IPS_GetInstance($instId);
+        if (!is_array($instance)) {
+            return 0;
+        }
+        return (int)($instance['ConnectionID'] ?? 0);
     }
 
     private function getHostFromParentInstance(): string
     {
-        $url = IPS_GetProperty($this->getParentInstanceId($this->InstanceID), 'URL');
+        $parentId = $this->getParentInstanceId($this->InstanceID);
+        if ($parentId <= 0) {
+            return '';
+        }
+
+        $url = (string)@IPS_GetProperty($parentId, 'URL');
+        if ($url === '') {
+            return '';
+        }
+
         return parse_url($url, PHP_URL_HOST) ? : '';
     }
 
