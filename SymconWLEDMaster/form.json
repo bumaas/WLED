@@ -16,6 +16,7 @@
     "actions":
     [
         { "type": "Button", "label": "Update State", "onClick": "WLEDMaster_GetUpdate($id);" },
+        { "type": "Button", "label": "Refresh Presets/Playlists", "onClick": "IPS_RequestAction($id, 'RefreshDynamicLists', '');" },
         { "type": "TestCenter"}
     ]
 }

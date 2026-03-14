@@ -32,32 +32,9 @@ class WLEDSplitter extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht löschen
+        // Diese Zeile nicht loeschen
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
-
-        if (!IPS_VariableProfileExists("WLED.Transition")) {
-            IPS_CreateVariableProfile("WLED.Transition", VARIABLETYPE_FLOAT);
-        }
-        IPS_SetVariableProfileValues("WLED.Transition", 0.0, 6553.5, 0.1);
-        IPS_SetVariableProfileDigits("WLED.Transition", 1);
-        IPS_SetVariableProfileText("WLED.Transition", "", " s");
-
-        if (!IPS_VariableProfileExists("WLED.NightlightDuration")) {
-            IPS_CreateVariableProfile("WLED.NightlightDuration", VARIABLETYPE_INTEGER);
-            IPS_SetVariableProfileValues("WLED.NightlightDuration", 1, 255, 1);
-            IPS_SetVariableProfileText("WLED.NightlightDuration", "", " Min.");
-        }
-
-        if (!IPS_VariableProfileExists("WLED.NightlightMode")) {
-            IPS_CreateVariableProfile("WLED.NightlightMode", VARIABLETYPE_INTEGER);
-            IPS_SetVariableProfileValues("WLED.NightlightMode", 0, 0, 0);
-
-            IPS_SetVariableProfileAssociation("WLED.NightlightMode", 0, "instant", "", -1);
-            IPS_SetVariableProfileAssociation("WLED.NightlightMode", 1, "fade", "", -1);
-            IPS_SetVariableProfileAssociation("WLED.NightlightMode", 2, "color fade", "", -1);
-            IPS_SetVariableProfileAssociation("WLED.NightlightMode", 3, "sunrise", "", -1);
-        }
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;
@@ -71,30 +48,7 @@ class WLEDSplitter extends IPSModuleStrict
         $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
         $this->SetSummary($host);
         if (!empty($host) && Sys_Ping($host, 300)) {
-            $macSuffix = $this->getMacSuffix($host);
-            if ($macSuffix === '') {
-                $this->debugExpert(
-                    __FUNCTION__,
-                    'WLED response has no /json/info.mac; profile creation skipped',
-                    ['host' => $host],
-                    true
-                );
-                $this->SetStatus(IS_ACTIVE);
-                return;
-            }
-
-            $wledEffects  = 'WLED.Effects.' . $macSuffix;
-            $wledPalettes = 'WLED.Palettes.' . $macSuffix;
-            if (!IPS_VariableProfileExists($wledEffects)) {
-                IPS_CreateVariableProfile($wledEffects, VARIABLETYPE_INTEGER);
-            }
-            if (!IPS_VariableProfileExists($wledPalettes)) {
-                IPS_CreateVariableProfile($wledPalettes, VARIABLETYPE_INTEGER);
-            }
-            $wledEffectsArray = WLEDHttp::getData($host, "/json/eff");
-            $this->updateAssociations($wledEffects, $wledEffectsArray);
-            $wledPaletteArray = WLEDHttp::getData($host, "/json/pal");
-            $this->updateAssociations($wledPalettes, $wledPaletteArray);
+            $this->debugExpert(__FUNCTION__, 'Host reachable');
         }
         $this->SetStatus(IS_ACTIVE);
     }
@@ -108,96 +62,11 @@ class WLEDSplitter extends IPSModuleStrict
             case 'updateProfilePallets':
             case 'updateProfilePresets':
             case 'updateProfilePlaylists':
-                $this->processProfileUpdate(str_replace('updateProfile', '', $Ident));
+                // Legacy no-op: profile-based updates were replaced by variable presentations.
+                $this->debugExpert(__FUNCTION__, 'Legacy profile update ignored', ['ident' => $Ident]);
                 break;
             default:
                 trigger_error('unknown ident: ' . $Ident);
-        }
-    }
-
-    private function processProfileUpdate(string $profileType): void
-    {
-        $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
-        if (empty($host) || !Sys_Ping($host, 300)) {
-            return;
-        }
-
-        $macSuffix = $this->getMacSuffix($host);
-        if ($macSuffix === '') {
-            $this->debugExpert(
-                __FUNCTION__,
-                'WLED response has no /json/info.mac; profile update skipped',
-                ['host' => $host, 'profileType' => $profileType],
-                true
-            );
-            return;
-        }
-
-        $profileName = sprintf('WLED.%s.%s', $profileType, $macSuffix);
-
-        if (!IPS_VariableProfileExists($profileName)) {
-            IPS_CreateVariableProfile($profileName, VARIABLETYPE_INTEGER);
-        }
-
-        $profileData = $this->fetchProfileData($host, $profileType);
-
-        if ($profileData) {
-            $this->updateAssociations($profileName, $profileData);
-        }
-    }
-
-    private function getMacSuffix(string $host): string
-    {
-        $info = WLEDHttp::getData($host, '/json/info');
-        $mac  = (string)($info['mac'] ?? '');
-        if ($mac === '') {
-            return '';
-        }
-
-        return substr($mac, -4);
-    }
-
-
-    private function fetchProfileData(string $host, string $profileType): ?array
-    {
-        switch ($profileType) {
-            case 'Effects':
-                return WLEDHttp::getData($host, "/json/eff");
-            case 'Pallets': // backward compatibility (legacy typo)
-            case 'Palettes':
-                return WLEDHttp::getData($host, "/json/pal");
-            case 'Presets':
-            case 'Playlists':
-                $presets  = WLEDHttp::getData($host, '/presets.json');
-                $data[-1] = $this->translate('-not active-');
-                foreach ($presets as $key => $preset) {
-                    if (isset($preset['n'], $preset[($profileType === 'Presets' ? 'mainseg' : 'playlist')])) {
-                        $data[$key] = $preset['n'];
-                    }
-                }
-                return $data;
-            default:
-                return null;
-        }
-    }
-
-    private function updateAssociations(string $profileName, array $dataArray): void
-    {
-        $this->debugExpert(__FUNCTION__, 'Update profile associations', ['profile' => $profileName, 'entries' => count($dataArray)]);
-        // Deleting old associations
-        foreach (IPS_GetVariableProfile($profileName)['Associations'] as $association) {
-            IPS_SetVariableProfileAssociation($profileName, $association['Value'], '', '', -1);
-        }
-        // Updating with new associations
-        $i = 1;
-        foreach ($dataArray as $key => $name) {
-            if ($i > 128) {
-                array_splice($dataArray, 0, 128);
-                $this->debugExpert(__FUNCTION__, 'Association limit reached', ['profile' => $profileName, 'max' => 128], true);
-                break;
-            }
-            IPS_SetVariableProfileAssociation($profileName, $key, $name, '', -1);
-            $i++;
         }
     }
 
@@ -251,33 +120,33 @@ class WLEDSplitter extends IPSModuleStrict
 
         $state = $jsonData['state'];
 
-        //Nachricht zum Master schicken
+        // Nachricht zum Master schicken
         $this->SendDataToMaster(json_encode($state, JSON_THROW_ON_ERROR));
 
-        //Nachricht an die Segmente schicken
+        // Nachricht an die Segmente schicken
         if (!isset($state['seg']) || !is_array($state['seg'])) {
             return '';
         }
 
         $powerOn = false;
 
-        foreach ($state["seg"] as $segmentData) {
-            if ($state["on"] === false && $this->ReadPropertyBoolean("SyncPower")) {
-                //alle Segmente ausschalten, wenn wled ausgeschaltet wird!
-                $segmentData["on"] = false;
+        foreach ($state['seg'] as $segmentData) {
+            if ($state['on'] === false && $this->ReadPropertyBoolean(self::PROP_SYNCPOWER)) {
+                // Alle Segmente ausschalten, wenn WLED ausgeschaltet wird.
+                $segmentData['on'] = false;
                 $this->debugExpert(__FUNCTION__, 'Turn off all segments');
             }
 
             $this->SendDataToSegment(json_encode($segmentData, JSON_THROW_ON_ERROR));
 
-            if ($segmentData["on"] === true) {
+            if (($segmentData['on'] ?? false) === true) {
                 $powerOn = true;
             }
         }
 
-        //prüfen, ob alle Segmente ausgeschaltet wurden
-        if ($state["on"] && ($powerOn === false) && $this->ReadPropertyBoolean("SyncPower")) {
-            $this->SendData('{"on":false}'); //an den Parent schicken
+        // Pruefen, ob alle Segmente ausgeschaltet wurden
+        if ($state['on'] && ($powerOn === false) && $this->ReadPropertyBoolean(self::PROP_SYNCPOWER)) {
+            $this->SendData('{"on":false}'); // an den Parent schicken
         }
         return '';
     }
@@ -295,7 +164,4 @@ class WLEDSplitter extends IPSModuleStrict
         $this->SendData(json_encode($data, JSON_THROW_ON_ERROR));
         return '';
     }
-
 }
-
-

@@ -2,15 +2,18 @@
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
 require_once __DIR__ . '/../libs/WLEDHttp.php';
+require_once __DIR__ . '/../libs/WLEDPresentations.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
 use libs\WLEDHttp;
 use libs\WLEDIds;
+use libs\WLEDPresentations;
 
 class WLEDSegment extends IPSModuleStrict
 {
     use ModuleDebugTrait;
 
+    private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
     private const string MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
 
     private const string PROP_SEGMENT_ID  = 'SegmentID';
@@ -80,7 +83,16 @@ class WLEDSegment extends IPSModuleStrict
 
         $this->updateDeviceInfo();
     }
+    public function GetConfigurationForm(): string
+    {
+        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true, 512, JSON_THROW_ON_ERROR);
+        $showRefreshButton = $this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES);
+        if (isset($form['actions'][1])) {
+            $form['actions'][1]['visible'] = $showRefreshButton;
+        }
 
+        return json_encode($form, JSON_THROW_ON_ERROR);
+    }
     private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
@@ -95,72 +107,119 @@ class WLEDSegment extends IPSModuleStrict
 
     private function RegisterVariables(): void
     {
-        $this->RegisterVariableBoolean("VariablePower", $this->translate("Power"), "~Switch", 0);
+        $this->RegisterVariableBoolean("VariablePower", $this->translate("Power"), WLEDPresentations::switch(), 0);
         $this->EnableAction("VariablePower");
-        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
+        $this->RegisterVariableInteger(
+            self::VAR_IDENT_BRIGHTNESS,
+            $this->translate("Brightness"),
+            WLEDPresentations::slider(0, 255, 1, '', 2),
+            10
+        );
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_CCT)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_TEMPERATURE, $this->translate("CCT"), "~Intensity.255", 11);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_TEMPERATURE,
+                $this->translate("CCT"),
+                WLEDPresentations::slider(0, 255, 1),
+                11
+            );
             $this->EnableAction(self::VAR_IDENT_TEMPERATURE);
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS) || $this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
-            $deviceInfo = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
-            $this->debugExpert(__FUNCTION__, 'Device info loaded', ['deviceInfo' => $deviceInfo]);
-            $wledEffects  = isset($deviceInfo['mac']) ? 'WLED.Effects.' . substr($deviceInfo['mac'], -4) : '';
-            $wledPalettes = isset($deviceInfo['mac']) ? 'WLED.Palettes.' . substr($deviceInfo['mac'], -4) : '';
-
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
+                $effectsOptions = $this->loadIndexedOptions('/json/eff');
                 $this->RegisterVariableInteger(
                     "VariableEffects",
                     $this->translate("Effects"),
-                    IPS_VariableProfileExists($wledEffects) ? $wledEffects : '',
+                    WLEDPresentations::enumeration($effectsOptions),
                     20
                 );
-                $this->RegisterVariableInteger(self::VAR_IDENT_EFFECTS_SPEED, $this->translate("Effect Speed"), "~Intensity.255", 21);
-                $this->RegisterVariableInteger("VariableEffectsIntensity", $this->translate("Effect Intensity"), "~Intensity.255", 22);
+                $this->RegisterVariableInteger(
+                    self::VAR_IDENT_EFFECTS_SPEED,
+                    $this->translate("Effect Speed"),
+                    WLEDPresentations::slider(0, 255, 1, '', 2),
+                    21
+                );
+                $this->RegisterVariableInteger(
+                    "VariableEffectsIntensity",
+                    $this->translate("Effect Intensity"),
+                    WLEDPresentations::slider(0, 255, 1, '', 2),
+                    22
+                );
                 $this->EnableAction("VariableEffects");
                 $this->EnableAction(self::VAR_IDENT_EFFECTS_SPEED);
                 $this->EnableAction("VariableEffectsIntensity");
             }
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
+                $paletteOptions = $this->loadIndexedOptions('/json/pal');
                 $this->RegisterVariableInteger(
                     "VariablePalettes",
                     $this->translate("Palettes"),
-                    IPS_VariableProfileExists($wledPalettes) ? $wledPalettes : '',
+                    WLEDPresentations::enumeration($paletteOptions),
                     23
                 );
                 $this->EnableAction("VariablePalettes");
             }
         }
 
-        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, $this->translate("Color 1"), "~HexColor", 30);
+        $this->RegisterVariableInteger(self::VAR_IDENT_COLOR1, $this->translate("Color 1"), WLEDPresentations::color(), 30);
         $this->EnableAction(self::VAR_IDENT_COLOR1);
         if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_WHITE1, $this->translate("White 1"), "~Intensity.255", 31);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_WHITE1,
+                $this->translate("White 1"),
+                WLEDPresentations::slider(0, 255, 1, '', 2),
+                31
+            );
             $this->EnableAction(self::VAR_IDENT_WHITE1);
         }
-        $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR1, $this->translate("White Tone Control 1"), "~TWColor", 32);
+        $this->RegisterVariableInteger(
+            self::VAR_IDENT_TWCOLOR1,
+            $this->translate("White Tone Control 1"),
+            WLEDPresentations::slider(self::MIN_COLOR_TEMP, self::MAX_COLOR_TEMP, 50, ' K', 1),
+            32
+        );
         $this->EnableAction(self::VAR_IDENT_TWCOLOR1);
 
         if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, $this->translate("Color 2"), "~HexColor", 35);
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR2, $this->translate("Color 2"), WLEDPresentations::color(), 35);
             $this->EnableAction(self::VAR_IDENT_COLOR2);
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE2, $this->translate("White 2"), "~Intensity.255", 36);
+                $this->RegisterVariableInteger(
+                    self::VAR_IDENT_WHITE2,
+                    $this->translate("White 2"),
+                    WLEDPresentations::slider(0, 255, 1, '', 2),
+                    36
+                );
                 $this->EnableAction(self::VAR_IDENT_WHITE2);
             }
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR2, $this->translate("White Tone Control 2"), "~TWColor", 37);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_TWCOLOR2,
+                $this->translate("White Tone Control 2"),
+                WLEDPresentations::slider(self::MIN_COLOR_TEMP, self::MAX_COLOR_TEMP, 50, ' K', 1),
+                37
+            );
             $this->EnableAction(self::VAR_IDENT_TWCOLOR2);
 
-            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, $this->translate("Color 3"), "~HexColor", 40);
+            $this->RegisterVariableInteger(self::VAR_IDENT_COLOR3, $this->translate("Color 3"), WLEDPresentations::color(), 40);
             $this->EnableAction(self::VAR_IDENT_COLOR3);
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                $this->RegisterVariableInteger(self::VAR_IDENT_WHITE3, $this->translate("White 3"), "~Intensity.255", 41);
+                $this->RegisterVariableInteger(
+                    self::VAR_IDENT_WHITE3,
+                    $this->translate("White 3"),
+                    WLEDPresentations::slider(0, 255, 1, '', 2),
+                    41
+                );
                 $this->EnableAction(self::VAR_IDENT_WHITE3);
             }
-            $this->RegisterVariableInteger(self::VAR_IDENT_TWCOLOR3, $this->translate("White Tone Control 3"), "~TWColor", 42);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_TWCOLOR3,
+                $this->translate("White Tone Control 3"),
+                WLEDPresentations::slider(self::MIN_COLOR_TEMP, self::MAX_COLOR_TEMP, 50, ' K', 1),
+                42
+            );
             $this->EnableAction(self::VAR_IDENT_TWCOLOR3);
         }
     }
@@ -244,8 +303,24 @@ class WLEDSegment extends IPSModuleStrict
 
     public function RequestAction($Ident, $Value): void
     {
+        if ((string)$Ident === self::ACTION_REFRESH_DYNAMIC_LISTS) {
+            $this->doRefreshDynamicLists();
+            return;
+        }
+
         $segArr = $this->buildSegmentPayloadForAction((string)$Ident, $Value);
         $this->sendAndUpdateValue($segArr);
+    }
+
+    public function RefreshDynamicLists(): void
+    {
+        $this->doRefreshDynamicLists();
+    }
+
+    private function doRefreshDynamicLists(): void
+    {
+        $this->debugExpert(__FUNCTION__, 'Refreshing dynamic list presentations');
+        $this->RegisterVariables();
     }
 
     private function buildSegmentPayloadForAction(string $ident, mixed $value): array
@@ -336,6 +411,41 @@ class WLEDSegment extends IPSModuleStrict
         }
 
         return $colors;
+    }
+
+    private function loadIndexedOptions(string $path): array
+    {
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return [['Value' => 0, 'Caption' => '0']];
+        }
+
+        $host = WLEDHttp::getHostFromDevice($this->InstanceID);
+        if ($host === '') {
+            return [['Value' => 0, 'Caption' => '0']];
+        }
+
+        $items = WLEDHttp::getData($host, $path, 2);
+        if (!is_array($items) || count($items) === 0) {
+            return [['Value' => 0, 'Caption' => '0']];
+        }
+
+        $options = [];
+        foreach ($items as $index => $label) {
+            if (!is_numeric((string)$index)) {
+                continue;
+            }
+
+            $options[] = [
+                'Value'   => (int)$index,
+                'Caption' => (string)$label
+            ];
+        }
+
+        if (count($options) === 0) {
+            return [['Value' => 0, 'Caption' => '0']];
+        }
+
+        return $options;
     }
 
     private function getValueIntegerByIdent(string $ident): int
@@ -479,5 +589,6 @@ class WLEDSegment extends IPSModuleStrict
     }
 
 }
+
 
 

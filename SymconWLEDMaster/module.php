@@ -2,15 +2,18 @@
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
 require_once __DIR__ . '/../libs/WLEDHttp.php';
+require_once __DIR__ . '/../libs/WLEDPresentations.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
 use libs\WLEDHttp;
 use libs\WLEDIds;
+use libs\WLEDPresentations;
 
 class WLEDMaster extends IPSModuleStrict
 {
     use ModuleDebugTrait;
 
+    private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
 
     //Properties
     private const string PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
@@ -64,7 +67,16 @@ class WLEDMaster extends IPSModuleStrict
 
         $this->updateDeviceInfo();
     }
+    public function GetConfigurationForm(): string
+    {
+        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true, 512, JSON_THROW_ON_ERROR);
+        $showRefreshButton = $this->ReadPropertyBoolean(self::PROP_SHOWPRESETS) || $this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST);
+        if (isset($form['actions'][1])) {
+            $form['actions'][1]['visible'] = $showRefreshButton;
+        }
 
+        return json_encode($form, JSON_THROW_ON_ERROR);
+    }
     private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
@@ -79,52 +91,80 @@ class WLEDMaster extends IPSModuleStrict
 
     private function RegisterVariables(): void
     {
-        $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, $this->translate("Power"), "~Switch", 0);
-        $this->RegisterVariableInteger(self::VAR_IDENT_BRIGHTNESS, $this->translate("Brightness"), "~Intensity.255", 10);
+        $this->RegisterVariableBoolean(
+            self::VAR_IDENT_POWER,
+            $this->translate("Power"),
+            WLEDPresentations::switch(),
+            0
+        );
+        $this->RegisterVariableInteger(
+            self::VAR_IDENT_BRIGHTNESS,
+            $this->translate("Brightness"),
+            WLEDPresentations::slider(0, 255, 1, '', 2),
+            10
+        );
         $this->EnableAction(self::VAR_IDENT_POWER);
         $this->EnableAction(self::VAR_IDENT_BRIGHTNESS);
 
-        $this->RegisterVariableFloat(self::VAR_IDENT_TRANSITION, $this->translate("Transition"), "WLED.Transition", 20);
+        $this->RegisterVariableFloat(
+            self::VAR_IDENT_TRANSITION,
+            $this->translate("Transition"),
+            WLEDPresentations::slider(0.0, 6553.5, 0.1, ' s'),
+            20
+        );
         $this->EnableAction(self::VAR_IDENT_TRANSITION);
 
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPRESETS)) {
-            $deviceInfo  = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
-            $wledPresets = isset($deviceInfo['mac']) ? 'WLED.Presets.' . substr($deviceInfo['mac'], -4) : '';
+            $presetOptions = $this->loadPresetOrPlaylistOptions(false);
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_PRESET,
                 $this->translate('Presets'),
-                IPS_VariableProfileExists($wledPresets) ? $wledPresets : '',
+                WLEDPresentations::enumeration($presetOptions),
                 30
             );
             $this->EnableAction(self::VAR_IDENT_PRESET);
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST)) {
-            $deviceInfo    = json_decode($this->ReadAttributeString(self::ATTR_DEVICE_INFO), true, 512, JSON_THROW_ON_ERROR);
-            $wledPlaylists = isset($deviceInfo['mac']) ? 'WLED.Playlists.' . substr($deviceInfo['mac'], -4) : '';
+            $playlistOptions = $this->loadPresetOrPlaylistOptions(true);
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_PLAYLIST,
                 $this->translate('Playlist'),
-                IPS_VariableProfileExists($wledPlaylists) ? $wledPlaylists : '',
+                WLEDPresentations::enumeration($playlistOptions),
                 35
             );
             $this->EnableAction(self::VAR_IDENT_PLAYLIST);
         }
 
         if ($this->ReadPropertyBoolean(self::PROP_SHOWNIGHTLIGHT)) {
-            $this->RegisterVariableBoolean(self::VAR_IDENT_NIGHTLIGHT_ON, $this->translate("Nightlight On"), "~Switch", 50);
+            $this->RegisterVariableBoolean(
+                self::VAR_IDENT_NIGHTLIGHT_ON,
+                $this->translate("Nightlight On"),
+                WLEDPresentations::switch(),
+                50
+            );
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_NIGHTLIGHT_DURATION,
                 $this->translate("Nightlight Duration"),
-                "WLED.NightlightDuration",
+                WLEDPresentations::slider(1, 255, 1, ' Min.'),
                 51
             );
-            $this->RegisterVariableInteger(self::VAR_IDENT_NIGHTLIGHT_MODE, $this->translate("Nightlight Mode"), "WLED.NightlightMode", 52);
+            $this->RegisterVariableInteger(
+                self::VAR_IDENT_NIGHTLIGHT_MODE,
+                $this->translate("Nightlight Mode"),
+                WLEDPresentations::enumeration([
+                    ['Value' => 0, 'Caption' => 'instant'],
+                    ['Value' => 1, 'Caption' => 'fade'],
+                    ['Value' => 2, 'Caption' => 'color fade'],
+                    ['Value' => 3, 'Caption' => 'sunrise']
+                ]),
+                52
+            );
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS,
                 $this->translate("Nightlight Target Brightness"),
-                "~Intensity.255",
+                WLEDPresentations::slider(0, 255, 1, '', 2),
                 53
             );
             $this->EnableAction(self::VAR_IDENT_NIGHTLIGHT_ON);
@@ -136,10 +176,45 @@ class WLEDMaster extends IPSModuleStrict
             $this->RegisterVariableInteger(
                 self::VAR_IDENT_NIGHTLIGHT_REMAININGDURATION,
                 $this->translate("Remaining Nightlight Duration"),
-                "~UnixTimestampTime",
+                WLEDPresentations::timeOnly(),
                 54
             );
         }
+    }
+
+    private function loadPresetOrPlaylistOptions(bool $playlist): array
+    {
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return [['Value' => -1, 'Caption' => $this->translate('-not active-')]];
+        }
+
+        $host = WLEDHttp::getHostFromDevice($this->InstanceID);
+        if ($host === '') {
+            return [['Value' => -1, 'Caption' => $this->translate('-not active-')]];
+        }
+
+        $presets = WLEDHttp::getData($host, '/presets.json', 2);
+        if (!is_array($presets)) {
+            return [['Value' => -1, 'Caption' => $this->translate('-not active-')]];
+        }
+
+        $options   = [['Value' => -1, 'Caption' => $this->translate('-not active-')]];
+        $fieldName = $playlist ? 'playlist' : 'mainseg';
+        foreach ($presets as $key => $preset) {
+            if (!is_numeric((string)$key) || !is_array($preset)) {
+                continue;
+            }
+            if (!isset($preset['n'], $preset[$fieldName])) {
+                continue;
+            }
+
+            $options[] = [
+                'Value'   => (int)$key,
+                'Caption' => (string)$preset['n']
+            ];
+        }
+
+        return $options;
     }
 
     public function GetUpdate(): void
@@ -227,8 +302,24 @@ class WLEDMaster extends IPSModuleStrict
 
     public function RequestAction($Ident, $Value): void
     {
+        if ((string)$Ident === self::ACTION_REFRESH_DYNAMIC_LISTS) {
+            $this->doRefreshDynamicLists();
+            return;
+        }
+
         $sendArr = $this->buildPayloadForAction((string)$Ident, $Value);
         $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
+    }
+
+    public function RefreshDynamicLists(): void
+    {
+        $this->doRefreshDynamicLists();
+    }
+
+    private function doRefreshDynamicLists(): void
+    {
+        $this->debugExpert(__FUNCTION__, 'Refreshing dynamic list presentations');
+        $this->RegisterVariables();
     }
 
     private function buildPayloadForAction(string $ident, mixed $value): array
@@ -255,15 +346,19 @@ class WLEDMaster extends IPSModuleStrict
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_ON:
                 $sendArr['nl']['on'] = $value;
+                $sendArr['v'] = true;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_DURATION:
                 $sendArr['nl']['dur'] = $value;
+                $sendArr['v'] = true;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_MODE:
                 $sendArr['nl']['mode'] = $value;
+                $sendArr['v'] = true;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS:
                 $sendArr['nl']['tbri'] = $value;
+                $sendArr['v'] = true;
                 break;
             default:
                 throw new RuntimeException('Invalid Ident');

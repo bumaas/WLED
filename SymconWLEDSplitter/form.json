@@ -10,9 +10,6 @@
     }
   ],
   "actions":  [
-    {"type": "Button", "label": "Update profile WLED.Presets", "onClick": "IPS_RequestAction($id, 'updateProfilePresets', '');"},
-    {"type": "Button", "label": "Update profile WLED.Playlists", "onClick": "IPS_RequestAction($id, 'updateProfilePlaylists', '');"},
-    {"type": "Button", "label": "Update profile WLED.Effects", "onClick": "IPS_RequestAction($id, 'updateProfileEffects', '');"},
-    {"type": "Button", "label": "Update profile WLED.Palettes", "onClick": "IPS_RequestAction($id, 'updateProfilePalettes', '');"}
+    {"type": "TestCenter"}
   ]
 }

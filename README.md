@@ -1,9 +1,12 @@
 ﻿[![Version](https://img.shields.io/badge/Symcon-PHPModul-red.svg)](https://www.symcon.de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/)
-[![Version](https://img.shields.io/badge/Modul%20Version-1.0-blue.svg)]()
-[![Version](https://img.shields.io/badge/Symcon%20Version-7.0%20%3E-green.svg)](https://www.symcon.de/forum/threads/30857-IP-Symcon-5-3-%28Stable%29-Changelog)
+[![Version](https://img.shields.io/badge/Modul%20Version-1.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/Symcon%20Version-9.0%20%3E-green.svg)](https://www.symcon.de/forum/)
 
 # WLED
-Die Bibliothek dient zum Steuern von LED-Stripes an einem mit [WLED](http://kno.wled.ge) geflashten ESP-Modul.
+Die Bibliothek integriert [WLED](http://kno.wled.ge) nahtlos in IP-Symcon und ermöglicht die Steuerung kompatibler LED-Installationen.
+Über die Discovery-Funktion werden WLED-Geräte im Netzwerk automatisch erkannt und für die weitere Einrichtung vorbereitet.
+Master- und Segment-Module bilden zentrale sowie segmentbezogene Funktionen wie Helligkeit, Farben, Effekte, Paletten, Presets und Playlists in Symcon ab.
+Damit entsteht eine flexible Grundlage für kleine Licht-Setups ebenso wie für umfangreiche, segmentierte Installationen.
 
 ## Dokumentation
 
@@ -15,12 +18,12 @@ Die Bibliothek dient zum Steuern von LED-Stripes an einem mit [WLED](http://kno.
 6. [Lizenz](#6-lizenz)
 
 ## 1. Voraussetzungen
-- IPS 7.0 oder hoeher
+- Symcon 9.0 oder höher
 - ESP Modul mit installiertem [WLED](https://kno.wled.ge/)
 
 ## 2. Funktionsumfang
 
-Es werden vier Instanzen zur Verfuegung gestellt:
+Es werden vier Instanzen zur Verfügung gestellt:
 
 - __WLED Discovery__
   Findet WLED Instanzen im Netzwerk per mDNS und bietet die automatische Anlage der WLED-Instanzen an.
@@ -29,7 +32,7 @@ Es werden vier Instanzen zur Verfuegung gestellt:
   Der Splitter stellt die Verbindung zwischen dem WebSocket-Client und den WLED-Instanzen her.
 
 - __WLED Segment__
-  Hierueber wird ein einzelnes Segment gesteuert.
+  Hierüber wird ein einzelnes Segment gesteuert.
 
 - __WLED Master__
   Zur Steuerung des Masters.
@@ -37,7 +40,7 @@ Es werden vier Instanzen zur Verfuegung gestellt:
 Alle vier Instanzen besitzen im Konfigurationsformular einen Bereich __Expert__ mit der Option __EnableExpertDebug__ für erweiterte Debug-Ausgaben.
 
 ## 3. Software-Installation
-Ueber den Module Store das Modul "WLED" installieren.
+Über den Module Store das Modul "WLED" installieren.
 
 ## 4. Einrichten der Instanzen in IP-Symcon
 
@@ -50,18 +53,20 @@ Dort ist der Endpunkt einzutragen, unter dem der WLED-Server erreichbar ist:
 ### WLED Splitter
 #### Konfigurationsseite
 - Sync Power with Segments: Synchronisiert den Einschaltzustand des Masters mit den Segmenten.
-- Update profile WLED.Presets
-- Update profile WLED.Playlists
-- Update profile WLED.Effects
-- Update profile WLED.Palettes
 - Expert: EnableExpertDebug
 
 ### WLED Master
 #### Konfigurationsseite
 - Presets: Legt die Statusvariable "Presets" an.
 - Playlist: Legt die Statusvariable "Wiedergabeliste" an.
-- Nightlight: Legt Statusvariablen fuer den Nachtlichtmodus an.
+- Nightlight: Legt Statusvariablen für den Nachtlichtmodus an.
 - Expert: EnableExpertDebug
+
+Hinweis:
+- Presets, Playlists, Effects und Palettes werden als Darstellungen (Enumeration) direkt aus den WLED-Endpunkten geladen.
+- Es werden keine dynamischen WLED.*-Variablenprofile mehr benötigt.
+- Im Aktionsbereich steht "Presets/Playlists aktualisieren" zur Verfügung.
+- Die Schaltfläche wird nur angezeigt, wenn Presets oder Playlist aktiviert sind.
 
 ### WLED Segment
 #### Konfigurationsseite
@@ -72,6 +77,8 @@ Dort ist der Endpunkt einzutragen, unter dem der WLED-Server erreichbar ist:
 - Colors (2 + 3)
 - CCT
 - Expert: EnableExpertDebug
+- Im Aktionsbereich steht "Effekte/Paletten aktualisieren" zur Verfügung.
+- Die Schaltfläche wird nur angezeigt, wenn Effect Mode oder Palettes aktiviert sind.
 
 ## 5. Statusvariablen
 
@@ -94,6 +101,7 @@ Dort ist der Endpunkt einzutragen, unter dem der WLED-Server erreichbar ist:
 - Effect Speed (Integer)
 - Effect Intensity (Integer)
 - Color 1, 2, 3 (Integer)
+- White 1, 2, 3 (Integer)
 - White Tone Control 1, 2, 3 (Integer)
 
 ## 6. Lizenz
