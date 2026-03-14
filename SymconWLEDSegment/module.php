@@ -268,21 +268,7 @@ class WLEDSegment extends IPSModuleStrict
             case self::VAR_IDENT_WHITE1:
             case self::VAR_IDENT_WHITE2:
             case self::VAR_IDENT_WHITE3:
-                $segArr['col'][0] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR1 ? $value : $this->GetValue(self::VAR_IDENT_COLOR1));
-                if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                    $segArr['col'][0][3] = $this->GetValue(self::VAR_IDENT_WHITE1);
-                }
-                if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
-                    $segArr['col'][1] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR2 ? $value : $this->GetValue(self::VAR_IDENT_COLOR2));
-                    $segArr['col'][2] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR3 ? $value : $this->GetValue(self::VAR_IDENT_COLOR3));
-                    if ($this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR)) {
-                        $segArr['col'][1][3] = $this->GetValue(self::VAR_IDENT_WHITE2);
-                        $segArr['col'][2][3] = $this->GetValue(self::VAR_IDENT_WHITE3);
-                    }
-                } else {
-                    $segArr['col'][1] = [0, 0, 0];
-                    $segArr['col'][2] = [0, 0, 0];
-                }
+                $segArr['col'] = $this->buildColorPayloadForAction($ident, $value);
                 break;
 
             case 'VariableTemperature':
@@ -322,6 +308,44 @@ class WLEDSegment extends IPSModuleStrict
         }
 
         return $segArr;
+    }
+
+    private function buildColorPayloadForAction(string $ident, int $value): array
+    {
+        $colors    = [];
+        $showWhite = $this->ReadPropertyBoolean(self::PROP_SHOW_WHITE_COLOR);
+
+        $colors[0] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR1 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_COLOR1));
+        if ($showWhite) {
+            // Bei White1 muss der frisch gesetzte Action-Wert sofort in den Payload,
+            // sonst wird der alte Variablenwert erneut gesendet.
+            $colors[0][3] = $ident === self::VAR_IDENT_WHITE1 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_WHITE1);
+        }
+
+        if ($this->ReadPropertyBoolean(self::PROP_MORE_COLORS)) {
+            $colors[1] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR2 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_COLOR2));
+            $colors[2] = $this->HexToRGB($ident === self::VAR_IDENT_COLOR3 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_COLOR3));
+            if ($showWhite) {
+                // Gleiches Prinzip für White2/White3: aktueller Bedienwert hat Vorrang.
+                $colors[1][3] = $ident === self::VAR_IDENT_WHITE2 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_WHITE2);
+                $colors[2][3] = $ident === self::VAR_IDENT_WHITE3 ? $value : $this->getValueIntegerByIdent(self::VAR_IDENT_WHITE3);
+            }
+        } else {
+            $colors[1] = [0, 0, 0];
+            $colors[2] = [0, 0, 0];
+        }
+
+        return $colors;
+    }
+
+    private function getValueIntegerByIdent(string $ident): int
+    {
+        $id = @$this->GetIDForIdent($ident);
+        if ($id <= 0) {
+            return 0;
+        }
+
+        return GetValueInteger($id);
     }
 
     /**
