@@ -28,6 +28,11 @@ class WLEDPresentations
         string $suffix = '',
         ?int $usageType = null
     ): array {
+        $applyPercentage = self::shouldApplyPercentage($min, $max, $stepSize, $suffix);
+        if ($applyPercentage) {
+            $suffix = ' %';
+        }
+
         $presentation = [
             'PRESENTATION' => VARIABLE_PRESENTATION_SLIDER,
             'MIN'          => $min,
@@ -41,6 +46,10 @@ class WLEDPresentations
 
         if ($usageType !== null) {
             $presentation['USAGE_TYPE'] = $usageType;
+        }
+
+        if ($applyPercentage) {
+            $presentation['PERCENTAGE'] = true;
         }
 
         return $presentation;
@@ -86,5 +95,18 @@ class WLEDPresentations
             'DATE'         => 0,
             'TIME'         => 2
         ];
+    }
+
+    private static function shouldApplyPercentage(int|float $min, int|float $max, int|float $stepSize, string $suffix): bool
+    {
+        // Nur fuer Integer-Slider ohne gesetztes Suffix und bei 0..255 oder 0..100.
+        if ($suffix !== '') {
+            return false;
+        }
+        if (!is_int($min) || !is_int($max) || !is_int($stepSize)) {
+            return false;
+        }
+
+        return ($min === 0 && $max === 255) || ($min === 0 && $max === 100);
     }
 }
