@@ -2,13 +2,13 @@
   "translations": {
     "de": {
       "The following variables are optional:": "Die folgenden Variablen sind optional:",
-      "Presets":                               "Presets",
+      "Presets":                               "Voreinstellungen",
       "Playlist":                              "Wiedergabeliste",
       "Nightlight":                            "Nachtlicht",
       "Expert":                                "Experte",
       "Enable extended debug output":          "Erweiterte Debug-Ausgaben aktivieren",
       "Update State":                          "Aktualisiere Status",
-      "Refresh Presets/Playlists":             "Presets/Playlists aktualisieren",
+      "Refresh Presets/Playlists":             "Voreinstellungen/Wiedergabeliste aktualisieren",
       "Power":                                 "Ein",
       "Brightness":                            "Helligkeit",
       "Transition":                            "Übergang",

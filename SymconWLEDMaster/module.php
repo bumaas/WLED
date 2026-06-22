@@ -342,7 +342,9 @@ class WLEDMaster extends IPSModuleStrict
                 $sendArr['ps'] = $value;
                 break;
             case self::VAR_IDENT_PLAYLIST:
-                $sendArr['pl'] = $value;
+                // Eine Playlist ist in WLED ein Preset und wird über "ps" gestartet.
+                // ("pl" ist im JSON-State read-only und meldet nur die laufende Playlist zurück.)
+                $sendArr['ps'] = $value;
                 break;
             case self::VAR_IDENT_NIGHTLIGHT_ON:
                 $sendArr['nl']['on'] = $value;
