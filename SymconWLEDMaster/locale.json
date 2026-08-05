@@ -16,7 +16,8 @@
       "Nightlight Duration":                   "Nachtlicht Dauer",
       "Nightlight Mode":                       "Nachtlicht Modus",
       "Nightlight Target Brightness":          "Nachtlicht Zielhelligkeit",
-      "Remaining Nightlight Duration":         "Nachtlicht verbleibende Dauer"
+      "Remaining Nightlight Duration":         "Nachtlicht verbleibende Dauer",
+      "-not active-":                          "-nicht aktiv-"
     }
   }
 }

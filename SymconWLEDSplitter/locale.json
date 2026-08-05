@@ -3,8 +3,7 @@
     "de": {
       "Sync Power with Segments": "Synchronisiere den Einschaltzustand des Masters mit den Segmenten",
       "Expert": "Experte",
-      "Enable extended debug output": "Erweiterte Debug-Ausgaben aktivieren",
-      "Turn off all segments": "Schalte alle Segmente aus"
+      "Enable extended debug output": "Erweiterte Debug-Ausgaben aktivieren"
     }
   }
 }

@@ -1,5 +1,7 @@
 <?php /** @noinspection AutoloadingIssuesInspection */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../libs/WLEDIds.php';
 require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/WLEDPresentations.php';

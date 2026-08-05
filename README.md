@@ -1,6 +1,7 @@
 ﻿[![Version](https://img.shields.io/badge/Symcon-PHPModul-red.svg)](https://www.symcon.de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/)
 [![Version](https://img.shields.io/badge/Modul%20Version-1.1-blue.svg)]()
 [![Version](https://img.shields.io/badge/Symcon%20Version-9.0%20%3E-green.svg)](https://www.symcon.de/forum/)
+[![Checks](https://github.com/bumaas/WLED/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/WLED/actions/workflows/check.yml)
 
 # WLED
 Die Bibliothek integriert [WLED](http://kno.wled.ge) nahtlos in IP-Symcon und ermöglicht die Steuerung kompatibler LED-Installationen.
