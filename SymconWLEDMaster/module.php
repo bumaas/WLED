@@ -290,8 +290,8 @@ class WLEDMaster extends IPSModuleStrict
                 }
 
                 $s = $data["nl"]["rem"] % 60;
-                $m = floor(($data["nl"]["rem"] % 3600) / 60);
-                $h = floor(($data["nl"]["rem"] % 86400) / 3600);
+                $m = intdiv($data["nl"]["rem"] % 3600, 60);
+                $h = intdiv($data["nl"]["rem"] % 86400, 3600);
 
                 $time = new DateTime('2001-01-01');
                 $time->setTime($h, $m, $s);

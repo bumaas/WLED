@@ -483,7 +483,7 @@ class WLEDSegment extends IPSModuleStrict
      *
      * @return array An array containing the red, green, and blue values as integers.
      */
-    private function colorTempToRGB(int $kelvin): array
+    private function colorTempToRGB(float $kelvin): array
     {
         $temp = $kelvin / 100;
 
