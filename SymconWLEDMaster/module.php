@@ -43,11 +43,9 @@ class WLEDMaster extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_SHOWNIGHTLIGHT, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOWPRESETS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOWPLAYLIST, false);
-        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
+        $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
-
-        //$this->ConnectParent("{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}");
     }
 
     public function ApplyChanges(): void

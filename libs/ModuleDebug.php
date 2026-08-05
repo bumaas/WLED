@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 trait ModuleDebugTrait
 {
+    private const string PROP_ENABLE_EXPERT_DEBUG = 'EnableExpertDebug';
+
     // These categories are always logged to keep lifecycle and control-flow traceable.
+    // Achtung: Kategorie ist überall __FUNCTION__ — die Liste ist an Methodennamen gekoppelt.
     private const array BASIC_DEBUG_CATEGORIES = [
         'ApplyChanges',
-        'Config',
-        'Discovery',
         'MessageSink',
-        'RequestAction',
-        'REST',
-        'UpdateCache'
+        'RequestAction'
     ];
 
     // $always=true forces logging regardless of category and EnableExpertDebug setting.
     // EnableExpertDebug=false logs only BASIC_DEBUG_CATEGORIES to keep logs concise.
     private function debugExpert(string $category, string $message, array $context = [], bool $always = false): void
     {
-        $expertDebugEnabled = @($this->ReadPropertyBoolean('EnableExpertDebug'));
+        $expertDebugEnabled = @($this->ReadPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG));
         if (!$always && !$expertDebugEnabled) {
             if (!in_array($category, self::BASIC_DEBUG_CATEGORIES, true)) {
                 return;

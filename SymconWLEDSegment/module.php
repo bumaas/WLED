@@ -16,8 +16,6 @@ class WLEDSegment extends IPSModuleStrict
     use ModuleDebugTrait;
     use WLEDDeviceTrait;
 
-    private const string MODID_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
-
     private const string PROP_SEGMENT_ID  = 'SegmentID';
     private const string PROP_MORE_COLORS = 'MoreColors';
     private const string PROP_SHOW_CCT    = 'ShowTemperature';
@@ -26,9 +24,13 @@ class WLEDSegment extends IPSModuleStrict
     private const string PROP_SHOW_WHITE_COLOR = 'ShowChannelWhite';
 
     //Variables
-    private const string VAR_IDENT_BRIGHTNESS  = "VariableBrightness";
+    private const string VAR_IDENT_POWER       = 'VariablePower';
+    private const string VAR_IDENT_BRIGHTNESS  = 'VariableBrightness';
     private const string VAR_IDENT_TEMPERATURE = 'VariableTemperature';
+    private const string VAR_IDENT_EFFECTS   = 'VariableEffects';
     private const string VAR_IDENT_EFFECTS_SPEED = 'VariableEffectsSpeed';
+    private const string VAR_IDENT_EFFECTS_INTENSITY = 'VariableEffectsIntensity';
+    private const string VAR_IDENT_PALETTES = 'VariablePalettes';
 
     private const string VAR_IDENT_COLOR1 = 'VariableColor1';
     private const string VAR_IDENT_COLOR2 = 'VariableColor2';
@@ -57,11 +59,9 @@ class WLEDSegment extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_SHOW_WHITE_COLOR, false);
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
-        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
+        $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
 
         $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
-
-//        $this->ConnectParent(self::MODID_WLED_SPLITTER);
     }
 
     public function ApplyChanges(): void
@@ -93,8 +93,8 @@ class WLEDSegment extends IPSModuleStrict
 
     private function RegisterVariables(): void
     {
-        $this->RegisterVariableBoolean("VariablePower", $this->translate("Power"), WLEDPresentations::switch(), 0);
-        $this->EnableAction("VariablePower");
+        $this->RegisterVariableBoolean(self::VAR_IDENT_POWER, $this->translate("Power"), WLEDPresentations::switch(), 0);
+        $this->EnableAction(self::VAR_IDENT_POWER);
         $this->RegisterVariableInteger(
             self::VAR_IDENT_BRIGHTNESS,
             $this->translate("Brightness"),
@@ -116,7 +116,7 @@ class WLEDSegment extends IPSModuleStrict
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_EFFECTS)) {
                 $effectsOptions = $this->loadIndexedOptions('/json/eff');
                 $this->RegisterVariableInteger(
-                    "VariableEffects",
+                    self::VAR_IDENT_EFFECTS,
                     $this->translate("Effects"),
                     WLEDPresentations::enumeration($effectsOptions),
                     20
@@ -128,25 +128,25 @@ class WLEDSegment extends IPSModuleStrict
                     21
                 );
                 $this->RegisterVariableInteger(
-                    "VariableEffectsIntensity",
+                    self::VAR_IDENT_EFFECTS_INTENSITY,
                     $this->translate("Effect Intensity"),
                     WLEDPresentations::slider(0, 255, 1, '', 2),
                     22
                 );
-                $this->EnableAction("VariableEffects");
+                $this->EnableAction(self::VAR_IDENT_EFFECTS);
                 $this->EnableAction(self::VAR_IDENT_EFFECTS_SPEED);
-                $this->EnableAction("VariableEffectsIntensity");
+                $this->EnableAction(self::VAR_IDENT_EFFECTS_INTENSITY);
             }
 
             if ($this->ReadPropertyBoolean(self::PROP_SHOW_PALETTES)) {
                 $paletteOptions = $this->loadIndexedOptions('/json/pal');
                 $this->RegisterVariableInteger(
-                    "VariablePalettes",
+                    self::VAR_IDENT_PALETTES,
                     $this->translate("Palettes"),
                     WLEDPresentations::enumeration($paletteOptions),
                     23
                 );
-                $this->EnableAction("VariablePalettes");
+                $this->EnableAction(self::VAR_IDENT_PALETTES);
             }
         }
 
@@ -219,7 +219,7 @@ class WLEDSegment extends IPSModuleStrict
 
         //daten verarbeiten!
         if (array_key_exists("on", $data)) {
-            $this->checkVariableAndSetValue("VariablePower", $data["on"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_POWER, $data["on"]);
         }
         if (array_key_exists("bri", $data)) {
             $this->checkVariableAndSetValue(self::VAR_IDENT_BRIGHTNESS, $data["bri"]);
@@ -250,16 +250,16 @@ class WLEDSegment extends IPSModuleStrict
             $this->checkVariableAndSetValue(self::VAR_IDENT_TEMPERATURE, $data["cct"]);
         }
         if (array_key_exists("pal", $data)) {
-            $this->checkVariableAndSetValue("VariablePalettes", $data["pal"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_PALETTES, $data["pal"]);
         }
         if (array_key_exists("fx", $data)) {
-            $this->checkVariableAndSetValue("VariableEffects", $data["fx"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_EFFECTS, $data["fx"]);
         }
         if (array_key_exists("sx", $data)) {
             $this->checkVariableAndSetValue(self::VAR_IDENT_EFFECTS_SPEED, $data["sx"]);
         }
         if (array_key_exists("ix", $data)) {
-            $this->checkVariableAndSetValue("VariableEffectsIntensity", $data["ix"]);
+            $this->checkVariableAndSetValue(self::VAR_IDENT_EFFECTS_INTENSITY, $data["ix"]);
         }
         return '';
     }
@@ -281,7 +281,7 @@ class WLEDSegment extends IPSModuleStrict
         $segArr['id'] = $this->ReadPropertyInteger(self::PROP_SEGMENT_ID);
 
         switch ($ident) {
-            case 'VariablePower':
+            case self::VAR_IDENT_POWER:
                 $segArr['on'] = $value;
                 break;
 
@@ -298,23 +298,23 @@ class WLEDSegment extends IPSModuleStrict
                 $segArr['col'] = $this->buildColorPayloadForAction($ident, $value);
                 break;
 
-            case 'VariableTemperature':
+            case self::VAR_IDENT_TEMPERATURE:
                 $segArr['cct'] = $value;
                 break;
 
-            case 'VariablePalettes':
+            case self::VAR_IDENT_PALETTES:
                 $segArr['pal'] = $value;
                 break;
 
-            case 'VariableEffects':
+            case self::VAR_IDENT_EFFECTS:
                 $segArr['fx'] = $value;
                 break;
 
-            case 'VariableEffectsSpeed':
+            case self::VAR_IDENT_EFFECTS_SPEED:
                 $segArr['sx'] = $value;
                 break;
 
-            case 'VariableEffectsIntensity':
+            case self::VAR_IDENT_EFFECTS_INTENSITY:
                 $segArr['ix'] = $value;
                 break;
 
@@ -417,7 +417,6 @@ class WLEDSegment extends IPSModuleStrict
      *
      * @return void
      * @throws \JsonException
-     * @throws \JsonException
      */
     private function sendAndUpdateValue(array $payload): void
     {
@@ -429,7 +428,7 @@ class WLEDSegment extends IPSModuleStrict
      * Convert color temperature to RGB values.
      * Algorithmus von Tanner Helland, leicht modifiziert
      *
-     * @param int $kelvin The color temperature in Kelvin.
+     * @param float $kelvin The color temperature in Kelvin.
      *
      * @return array An array containing the red, green, and blue values as integers.
      */
@@ -480,8 +479,7 @@ class WLEDSegment extends IPSModuleStrict
      *                   The array must have three elements representing Red, Green, and Blue values respectively.
      *
      * @return float The color temperature value.
-     * @throws \Exception
-     * @throws \Exception
+     * @throws \RuntimeException
      */
 
     private function RGBToColorTemp(array $rgb): float
@@ -494,7 +492,7 @@ class WLEDSegment extends IPSModuleStrict
         $colorTempMax = self::MAX_COLOR_TEMP;
         while ($colorTempMax - $colorTempMin > self::COLOR_TEMP_ACCURACY) {
             $averageColorTemp = ($colorTempMax + $colorTempMin) / 2;
-            [$calculatedRed, $calculatedGreen, $calculatedBlue] = $this->colorTempToRGB($averageColorTemp);
+            [$calculatedRed, , $calculatedBlue] = $this->colorTempToRGB($averageColorTemp);
 
             if ($calculatedRed === 0) {
                 throw new RuntimeException(sprintf('unexpected calculatedRed! rgb: %s, temp: %s', print_r($rgb, true), $averageColorTemp));

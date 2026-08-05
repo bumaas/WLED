@@ -19,7 +19,7 @@
     "actions":
     [
         { "type": "Button", "label": "Update State", "onClick": "WLEDSegment_GetUpdate($id);" },
-        { "type": "Button", "label": "Refresh Effects/Palettes", "onClick": "IPS_RequestAction($id, 'RefreshDynamicLists', '');" },
+        { "type": "Button", "name": "refreshButton", "label": "Refresh Effects/Palettes", "onClick": "IPS_RequestAction($id, 'RefreshDynamicLists', '');" },
         { "type": "TestCenter"}
     ]
 }

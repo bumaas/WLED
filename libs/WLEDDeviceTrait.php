@@ -36,9 +36,12 @@ trait WLEDDeviceTrait
         // __DIR__ zeigt im Trait auf libs/ — die form.json liegt neben der Klassendatei
         $formFile = dirname((new ReflectionClass($this))->getFileName()) . '/form.json';
         $form     = json_decode(file_get_contents($formFile), true, 512, JSON_THROW_ON_ERROR);
-        if (isset($form['actions'][1])) {
-            $form['actions'][1]['visible'] = $this->showRefreshButton();
+        foreach ($form['actions'] ?? [] as &$action) {
+            if (($action['name'] ?? '') === 'refreshButton') {
+                $action['visible'] = $this->showRefreshButton();
+            }
         }
+        unset($action);
 
         return json_encode($form, JSON_THROW_ON_ERROR);
     }

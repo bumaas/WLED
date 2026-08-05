@@ -24,7 +24,7 @@ class WLEDDiscovery extends IPSModuleStrict
         parent::Create();
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
         $this->RegisterTimer(self::TIMER_LOAD, 0, 'IPS_RequestAction($_IPS["TARGET"], "discover", "");');
-        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
+        $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
 
         $this->SetBuffer(self::BUFFER_DEVICES, json_encode([], JSON_THROW_ON_ERROR));
         $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(false, JSON_THROW_ON_ERROR));
@@ -293,7 +293,7 @@ class WLEDDiscovery extends IPSModuleStrict
                 'items'   => [
                     [
                         'type'    => 'CheckBox',
-                        'name'    => 'EnableExpertDebug',
+                        'name'    => self::PROP_ENABLE_EXPERT_DEBUG,
                         'caption' => 'Enable extended debug output'
                     ]
                 ]

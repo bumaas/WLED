@@ -15,8 +15,6 @@ class WLEDSplitter extends IPSModuleStrict
 {
     use ModuleDebugTrait;
 
-    private const string MODID_WEBSOCKET_CLIENT = '{D68FD31F-0E90-7019-F16C-1949BD3079EF}';
-
     private const string PROP_SYNCPOWER = 'SyncPower';
 
     public function Create(): void
@@ -26,9 +24,7 @@ class WLEDSplitter extends IPSModuleStrict
 
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyBoolean(self::PROP_SYNCPOWER, true);
-        $this->RegisterPropertyBoolean('EnableExpertDebug', false);
-
-        //$this->RequireParent(self::MODID_WEBSOCKET_CLIENT);
+        $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
     }
 
     public function ApplyChanges(): void

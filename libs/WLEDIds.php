@@ -7,10 +7,8 @@ namespace libs;
 final class WLEDIds
 {
     // Modul-IDs
-    //public const string MODULE_WLED_DISCOVERY = '{B1703D33-0B1E-41F7-8C85-3A9BBA2D6B91}';
     public const string MODULE_WLED_SPLITTER = '{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}';
     public const string MODULE_WLED_MASTER   = '{66DFD3D3-006D-5FC6-4CF8-E0EF31E7A2F4}';
-    //public const string MODULE_WLED_SEGMENT  = '{920FA780-28E0-C329-63C4-D79F8EEEE502}';
     public const string MODULE_WEBSOCKETCLIENT = '{D68FD31F-0E90-7019-F16C-1949BD3079EF}';
     public const string MODULE_MDNS            = '{780B2D48-916C-4D59-AD35-5A429B2355A5}';
 
