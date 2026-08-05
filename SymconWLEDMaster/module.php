@@ -6,16 +6,15 @@ require_once __DIR__ . '/../libs/WLEDIds.php';
 require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/WLEDPresentations.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
+require_once __DIR__ . '/../libs/WLEDDeviceTrait.php';
 
 use libs\WLEDHttp;
-use libs\WLEDIds;
 use libs\WLEDPresentations;
 
 class WLEDMaster extends IPSModuleStrict
 {
     use ModuleDebugTrait;
-
-    private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
+    use WLEDDeviceTrait;
 
     //Properties
     private const string PROP_SHOWNIGHTLIGHT = 'ShowNightlight';
@@ -33,9 +32,6 @@ class WLEDMaster extends IPSModuleStrict
     private const string VAR_IDENT_NIGHTLIGHT_MODE     = 'VariableNightlightMode';
     private const string VAR_IDENT_NIGHTLIGHT_TARGETBRIGHTNESS = 'VariableNightlightTargetBrightness';
     private const string VAR_IDENT_NIGHTLIGHT_REMAININGDURATION = 'VariableNightlightRemainingDuration';
-
-    //Attributes
-    private const string ATTR_DEVICE_INFO = 'DeviceInfo';
 
 
     public function Create(): void
@@ -69,26 +65,14 @@ class WLEDMaster extends IPSModuleStrict
 
         $this->updateDeviceInfo();
     }
-    public function GetConfigurationForm(): string
+    private function showRefreshButton(): bool
     {
-        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true, 512, JSON_THROW_ON_ERROR);
-        $showRefreshButton = $this->ReadPropertyBoolean(self::PROP_SHOWPRESETS) || $this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST);
-        if (isset($form['actions'][1])) {
-            $form['actions'][1]['visible'] = $showRefreshButton;
-        }
-
-        return json_encode($form, JSON_THROW_ON_ERROR);
+        return $this->ReadPropertyBoolean(self::PROP_SHOWPRESETS) || $this->ReadPropertyBoolean(self::PROP_SHOWPLAYLIST);
     }
-    private function updateDeviceInfo(): void
+
+    private function deviceSummarySuffix(): string
     {
-        $this->GetUpdate();
-        $host       = WLEDHttp::getHostFromDevice($this->InstanceID);
-        $deviceInfo = WLEDHttp::getData($host, '/json/info', 2);
-        if (count($deviceInfo)) {
-            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
-            $this->SetSummary(sprintf('%s:Master', $deviceInfo['name']));
-        }
-        $this->SetStatus(IS_ACTIVE);
+        return 'Master';
     }
 
     private function RegisterVariables(): void
@@ -219,29 +203,6 @@ class WLEDMaster extends IPSModuleStrict
         return $options;
     }
 
-    public function GetUpdate(): void
-    {
-        $this->SendData(json_encode(['v' => true], JSON_THROW_ON_ERROR));
-    }
-
-    public function SendData(string $jsonString): void
-    {
-        @$this->SendDataToParent(
-            json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
-                        JSON_THROW_ON_ERROR)
-        );
-        $this->debugExpert(__FUNCTION__, 'Payload', ['payload' => $jsonString]);
-    }
-
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
-    {
-        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
-
-        if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->updateDeviceInfo();
-        }
-    }
-
     public function ReceiveData($JSONString): string
     {
         $data = json_decode($JSONString, false, 512, JSON_THROW_ON_ERROR);
@@ -313,17 +274,6 @@ class WLEDMaster extends IPSModuleStrict
         $this->SendData(json_encode($sendArr, JSON_THROW_ON_ERROR));
     }
 
-    public function RefreshDynamicLists(): void
-    {
-        $this->doRefreshDynamicLists();
-    }
-
-    private function doRefreshDynamicLists(): void
-    {
-        $this->debugExpert(__FUNCTION__, 'Refreshing dynamic list presentations');
-        $this->RegisterVariables();
-    }
-
     private function buildPayloadForAction(string $ident, mixed $value): array
     {
         $sendArr = [];
@@ -369,21 +319,6 @@ class WLEDMaster extends IPSModuleStrict
         }
 
         return $sendArr;
-    }
-
-    /**
-     * Prüft, ob die angegebene Variable vorhanden ist, und setzt den Wert entsprechend.
-     *
-     * @param string $Ident Der Ident der Variablen.
-     * @param mixed  $Value Der zu setzende Wert.
-     *
-     * @return void
-     */
-    private function checkVariableAndSetValue(string $Ident, mixed $Value): void
-    {
-        if (@$this->GetIDForIdent($Ident)) {
-            $this->setValue($Ident, $Value);
-        }
     }
 
 }
