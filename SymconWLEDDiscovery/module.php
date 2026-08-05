@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/WLEDIds.php';
+require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
 
+use libs\WLEDHttp;
 use libs\WLEDIds;
 
 /** @noinspection AutoloadingIssuesInspection */
@@ -119,7 +121,7 @@ class WLEDDiscovery extends IPSModuleStrict
                 continue;
             }
 
-            $info = $this->probeWledInfo($ip);
+            $info = WLEDHttp::getData($ip, '/json/info');
             $mac  = strtoupper((string)($info['mac'] ?? ''));
             $key  = $mac !== '' ? 'mac:' . $mac : 'ip:' . $ip;
             $name = (string)($info['name'] ?? ($service['Name'] ?? 'WLED'));
@@ -165,23 +167,6 @@ class WLEDDiscovery extends IPSModuleStrict
         return '';
     }
 
-    private function probeWledInfo(string $host): array
-    {
-        $jsonData = @file_get_contents(sprintf('http://%s/json/info', $host), false, stream_context_create([
-                                                                                                               'http' => ['timeout' => 1]
-                                                                                                           ]));
-        if ($jsonData === false) {
-            return [];
-        }
-
-        try {
-            $decoded = json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
-            return is_array($decoded) ? $decoded : [];
-        } catch (Throwable) {
-            return [];
-        }
-    }
-
     private function mapDevicesToForm(array $foundDevices, array $existingMasterIDs, array $existingSplitterIDs): array
     {
         $formValues = [];
@@ -210,7 +195,7 @@ class WLEDDiscovery extends IPSModuleStrict
 
         // Fallback mapping: Splitter per Host
         foreach ($existingSplitterIDs as $id) {
-            $host = $this->getSplitterHost($id);
+            $host = WLEDHttp::getHostFromSplitter($id);
             if ($host !== '') {
                 $hostToId[$host] = $id;
             } else {
@@ -220,7 +205,7 @@ class WLEDDiscovery extends IPSModuleStrict
 
         // Preferred mapping: Master overrides Splitter per Host
         foreach ($existingMasterIDs as $id) {
-            $host = $this->getMasterHost($id);
+            $host = WLEDHttp::getHostFromDevice($id);
             if ($host !== '') {
                 $hostToId[$host] = $id;
             } else {
@@ -279,38 +264,6 @@ class WLEDDiscovery extends IPSModuleStrict
             'instanceID' => $id,
             'create'     => []
         ];
-    }
-
-    private function getMasterHost(int $masterId): string
-    {
-        $master = @IPS_GetInstance($masterId);
-        if (!is_array($master)) {
-            return '';
-        }
-
-        $splitterId = (int)($master['ConnectionID'] ?? 0);
-        if ($splitterId <= 0) {
-            return '';
-        }
-
-        return $this->getSplitterHost($splitterId);
-    }
-
-    private function getSplitterHost(int $splitterId): string
-    {
-        $splitter = IPS_GetInstance($splitterId);
-        $parentId = (int)($splitter['ConnectionID'] ?? 0);
-        if ($parentId <= 0) {
-            return '';
-        }
-
-        $url = (string)@IPS_GetProperty($parentId, 'URL');
-        if ($url === '') {
-            return '';
-        }
-
-        $host = parse_url($url, PHP_URL_HOST);
-        return is_string($host) ? $host : '';
     }
 
     private function getMdnsInstance(): int
