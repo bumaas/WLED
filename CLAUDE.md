@@ -28,8 +28,12 @@ WLED-Gerät ⇄ WebSocket Client (I/O) ⇄ WLED Splitter ⇄ WLED Master
 - `WLEDHttp.php` — HTTP-JSON-API-Helfer (`getHostFromDevice()`, `getData()`, z. B. für
   `/presets.json`, `/json/eff`, `/json/pal`)
 - `WLEDPresentations.php` — Variablen-Darstellungen (Presentations statt Legacy-Profile)
+- `WLEDDeviceTrait.php` — gemeinsame Basis von Master und Segment (SendData/GetUpdate/
+  MessageSink, Geräteinfo, Konfigurationsform, Refresh der dynamischen Listen); die
+  Klassen liefern `RegisterVariables()`, `showRefreshButton()` und `deviceSummarySuffix()`
 - `ModuleDebug.php` — `ModuleDebugTrait` mit `debugExpert()` (Property „Enable extended
-  debug output")
+  debug output"); Debug-Kategorien sind an Methodennamen (`__FUNCTION__`) gekoppelt —
+  beim Umbenennen von Methoden `BASIC_DEBUG_CATEGORIES` mitprüfen
 
 Alle Module: `IPSModuleStrict` + `declare(strict_types=1)`.
 Hinweis: Im Code kommt auch kleingeschriebenes `->translate()` vor — der Locale-Check
