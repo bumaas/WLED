@@ -30,7 +30,7 @@ class WLEDSplitter extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         $this->RegisterMessage(0, IPS_KERNELMESSAGE);
-        // Diese Zeile nicht loeschen
+        // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
@@ -142,7 +142,7 @@ class WLEDSplitter extends IPSModuleStrict
             }
         }
 
-        // Pruefen, ob alle Segmente ausgeschaltet wurden
+        // Prüfen, ob alle Segmente ausgeschaltet wurden
         if ($state['on'] && ($powerOn === false) && $this->ReadPropertyBoolean(self::PROP_SYNCPOWER)) {
             $this->SendData('{"on":false}'); // an den Parent schicken
         }

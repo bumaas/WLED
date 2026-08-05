@@ -99,7 +99,7 @@ class WLEDPresentations
 
     private static function shouldApplyPercentage(int|float $min, int|float $max, int|float $stepSize, string $suffix): bool
     {
-        // Nur fuer Integer-Slider ohne gesetztes Suffix und bei 0..255 oder 0..100.
+        // Nur für Integer-Slider ohne gesetztes Suffix und bei 0..255 oder 0..100.
         if ($suffix !== '') {
             return false;
         }
