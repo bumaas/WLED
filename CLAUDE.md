@@ -1,6 +1,6 @@
 # WLED — Projektwissen
 
-IP-Symcon-Modulbibliothek (kompatibel ab Symcon 9.0) zur Steuerung von
+Symcon-Modulbibliothek (kompatibel ab Symcon 9.0) zur Steuerung von
 [WLED](https://kno.wled.ge)-LED-Controllern. Store-Bundle: `wled.symcon.acer90.module`
 (ursprünglich von Swen Babenschneider/acer90, weitergepflegt von bumaas).
 
@@ -48,5 +48,3 @@ matcht deshalb case-insensitiv.
 
 - Version/Build/Release-Ablauf: siehe globale `CLAUDE.md`
   („Build-/Versionspflege in Modul-Repos"); Commit-Subject `<version> build <NN>: <Beschreibung>`.
-- `T:\modules\WLED` ist das **produktive** Symcon-Modulverzeichnis (Share `\\nuc\Symcon`) —
-  Änderungen wirken nach Instanz-/Modul-Reload direkt auf die Live-Installation.
