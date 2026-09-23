@@ -1,0 +1,9 @@
+{
+    "hinweis": "Doku-Lücken bei Einführung von tests/check-readme.php. Nur streichen, nie ergänzen - neue Felder und Funktionen gehören in die Doku.",
+    "offen": [
+        "feld:WLEDMaster:EnableExpertDebug",
+        "feld:WLEDSegment:EnableExpertDebug",
+        "feld:WLEDSplitter:EnableExpertDebug",
+        "funktion:WLEDSplitter_SendData"
+    ]
+}

@@ -4,7 +4,7 @@
 [![Checks](https://github.com/bumaas/WLED/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/WLED/actions/workflows/check.yml)
 
 # WLED
-Die Bibliothek integriert [WLED](http://kno.wled.ge) nahtlos in IP-Symcon und ermöglicht die Steuerung kompatibler LED-Installationen.
+Die Bibliothek integriert [WLED](http://kno.wled.ge) nahtlos in Symcon und ermöglicht die Steuerung kompatibler LED-Installationen.
 Über die Discovery-Funktion werden WLED-Geräte im Netzwerk automatisch erkannt und für die weitere Einrichtung vorbereitet.
 Master- und Segment-Module bilden zentrale sowie segmentbezogene Funktionen wie Helligkeit, Farben, Effekte, Paletten, Presets und Playlists in Symcon ab.
 Damit entsteht eine flexible Grundlage für kleine Licht-Setups ebenso wie für umfangreiche, segmentierte Installationen.
@@ -14,7 +14,7 @@ Damit entsteht eine flexible Grundlage für kleine Licht-Setups ebenso wie für 
 1. [Voraussetzungen](#1-voraussetzungen)
 2. [Funktionsumfang](#2-funktionsumfang)
 3. [Software-Installation](#3-software-installation)
-4. [Einrichten der Instanzen in IP-Symcon](#4-einrichten-der-instanzen-in-ip-symcon)
+4. [Einrichten der Instanzen in Symcon](#4-einrichten-der-instanzen-in-symcon)
 5. [Statusvariablen](#5-statusvariablen)
 6. [Lizenz](#6-lizenz)
 
@@ -43,7 +43,7 @@ Alle vier Instanzen besitzen im Konfigurationsformular einen Bereich __Expert__ 
 ## 3. Software-Installation
 Über den Module Store das Modul "WLED" installieren.
 
-## 4. Einrichten der Instanzen in IP-Symcon
+## 4. Einrichten der Instanzen in Symcon
 
 ### WS-Client
 Bei der Anlage der Instanzen wird, sofern noch kein WebSocket angelegt wurde, ein WebSocket unter den IO-Instanzen angelegt.
