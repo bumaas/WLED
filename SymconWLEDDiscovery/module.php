@@ -22,7 +22,6 @@ class WLEDDiscovery extends IPSModuleStrict
     public function Create(): void
     {
         parent::Create();
-        $this->RegisterMessage(0, IPS_KERNELMESSAGE);
         $this->RegisterTimer(self::TIMER_LOAD, 0, 'IPS_RequestAction($_IPS["TARGET"], "discover", "");');
         $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
 
@@ -30,31 +29,15 @@ class WLEDDiscovery extends IPSModuleStrict
         $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(false, JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * Die Discovery braucht bei KR_READY nichts nachzuholen: Der Suchzustand liegt in einem
+     * Buffer, den Create() bei jedem Kernelstart auf "inaktiv" setzt, und die Suche startet
+     * erst, wenn jemand das Formular öffnet. Deshalb weder IPS_KERNELMESSAGE noch MessageSink.
+     */
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Module apply changes');
-
-        if (IPS_GetKernelRunlevel() !== KR_READY) {
-            return;
-        }
-
-        $this->resetSearchState();
-    }
-
-    public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
-    {
-        parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
-        if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->debugExpert(__FUNCTION__, 'Kernel ready received');
-            $this->resetSearchState();
-        }
-    }
-
-    /** Setzt die Suche zurück, damit das nächste Öffnen des Formulars sie neu startet. */
-    private function resetSearchState(): void
-    {
-        $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(false, JSON_THROW_ON_ERROR));
     }
 
     public function RequestAction($Ident, $Value): void

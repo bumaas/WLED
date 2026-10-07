@@ -43,10 +43,14 @@ matcht deshalb case-insensitiv.
 
 - Lokal: `C:\php\php tests\check_locale.php` (Übersetzungs-Vollständigkeit; Exit 1 bei Lücken)
 - `tests\check-kernelready.php`: KR_READY-Muster aller Module (kein eigener `ApplyChanges()`-Aufruf,
-  Guard `IPS_GetKernelRunlevel() !== KR_READY` in `ApplyChanges`, KR_READY-Arbeit im `MessageSink` über
-  eine eigene Methode). Anlass: Store-Review lehnte Stable 1.1 #41 ab, weil die Discovery im
-  `MessageSink` direkt `ApplyChanges()` aufrief.
-- CI: `.github/workflows/check.yml` — php -l (PHP 8.4), JSON-Validität, Locale-Check
+  auch nicht als `IPS_ApplyChanges($this->InstanceID)`; wer `IPS_KERNELMESSAGE` registriert, prüft in
+  `ApplyChanges` den Runlevel gegen `KR_READY` und erledigt die KR_READY-Arbeit im `MessageSink` über
+  eine eigene Methode). Methodenrümpfe und Trait-Einbindung kommen aus `token_get_all()`. Anlass:
+  Store-Review lehnte Stable 1.1 #41 ab, weil die Discovery im `MessageSink` direkt `ApplyChanges()`
+  aufrief. Die Discovery registriert seit build 45 gar kein `IPS_KERNELMESSAGE` mehr, weil sie bei
+  KR_READY nichts nachzuholen hat.
+- CI: `.github/workflows/check.yml` — php -l (PHP 8.4, Module, libs und tests), JSON-Validität,
+  Locale-Check, MCP-Prüfung (`bumaas/symcon-mcp-check@v1`), Modultests (`tests/check-*.php`)
 
 ## Konventionen
 
