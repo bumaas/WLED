@@ -34,7 +34,12 @@ class WLEDDiscovery extends IPSModuleStrict
     {
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Module apply changes');
-        $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(false, JSON_THROW_ON_ERROR));
+
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+
+        $this->resetSearchState();
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
@@ -42,8 +47,14 @@ class WLEDDiscovery extends IPSModuleStrict
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
             $this->debugExpert(__FUNCTION__, 'Kernel ready received');
-            $this->ApplyChanges();
+            $this->resetSearchState();
         }
+    }
+
+    /** Setzt die Suche zurück, damit das nächste Öffnen des Formulars sie neu startet. */
+    private function resetSearchState(): void
+    {
+        $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(false, JSON_THROW_ON_ERROR));
     }
 
     public function RequestAction($Ident, $Value): void
