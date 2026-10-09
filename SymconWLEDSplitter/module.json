@@ -2,7 +2,7 @@
   "id":                 "{F2FEBC51-7E07-3D45-6F71-3D0560DE6375}",
   "name":               "WLEDSplitter",
   "type":               2,
-  "vendor":             "",
+  "vendor":             "WLED",
   "aliases":            [
     "WLED Splitter"
   ],

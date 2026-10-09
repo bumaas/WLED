@@ -2,7 +2,7 @@
   "id":                 "{66DFD3D3-006D-5FC6-4CF8-E0EF31E7A2F4}",
   "name":               "WLEDMaster",
   "type":               3,
-  "vendor":             "",
+  "vendor":             "WLED",
   "aliases":            [
     "WLED Master"
   ],

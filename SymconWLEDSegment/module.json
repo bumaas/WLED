@@ -2,7 +2,7 @@
   "id":                 "{920FA780-28E0-C329-63C4-D79F8EEEE502}",
   "name":               "WLEDSegment",
   "type":               3,
-  "vendor":             "",
+  "vendor":             "WLED",
   "aliases":            [
     "WLED Segment"
   ],
