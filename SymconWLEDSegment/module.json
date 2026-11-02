@@ -10,5 +10,5 @@
   "childRequirements":  [],
   "implemented":        ["{D2353839-DA64-DF79-7CD5-4DD827DCE82A}"],
   "prefix":             "WLEDSegment",
-  "url":                "https://github.com/bumaas/WLED/blob/master/README.md"
+  "url":                "https://github.com/bumaas/WLED/blob/main/README.md"
 }

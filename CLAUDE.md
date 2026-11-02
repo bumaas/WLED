@@ -55,6 +55,8 @@ matcht deshalb case-insensitiv.
   KR_READY nichts nachzuholen hat.
 - CI: `.github/workflows/check.yml` — php -l (PHP 8.4, Module, libs und tests), JSON-Validität,
   Locale-Check, MCP-Prüfung (`bumaas/symcon-mcp-check@v1`), Modultests (`tests/check-*.php`)
+- `tests\check-fehlerunterdrueckung.php`: kein `@` vor `SendDataToParent`/`SendDataToChildren`
+  (Best Practice 1.2); `SendData()` prüft stattdessen `HasActiveParent()` und schreibt ins Debug
 - Kernel-Stub `symcon/SymconStubs` als Submodul `tests/stubs` (gepinnt), Checkout mit
   `submodules: true`, aus der JSON-Prüfung ausgenommen
 

@@ -65,7 +65,11 @@ trait WLEDDeviceTrait
 
     public function SendData(string $jsonString): void
     {
-        @$this->SendDataToParent(
+        if (!$this->HasActiveParent()) {
+            $this->debugExpert(__FUNCTION__, 'No active parent, payload not sent', ['payload' => $jsonString], true);
+            return;
+        }
+        $this->SendDataToParent(
             json_encode(["DataID" => WLEDIds::DATA_DEVICE_TO_SPLITTER, "FrameTyp" => 1, "Fin" => true, "Buffer" => bin2hex($jsonString)],
                         JSON_THROW_ON_ERROR)
         );
