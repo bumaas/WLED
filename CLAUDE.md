@@ -43,7 +43,9 @@ matcht deshalb case-insensitiv.
 
 ## Checks / CI
 
-- Lokal: `C:\php\php tests\check_locale.php` (Übersetzungs-Vollständigkeit; Exit 1 bei Lücken)
+- Lokal: `C:\php\php tests\check_locale.php` (Übersetzungs-Vollständigkeit; Exit 1 bei Lücken).
+  Meldet auch wörtliche `'Caption' => '<Text>'` im module.php (Darstellungsoptionen ohne
+  `translate()`); kleines `caption` in dynamischen Formularen übersetzt Symcon selbst
 - `tests\check-kernelready.php`: KR_READY-Muster aller Module (kein eigener `ApplyChanges()`-Aufruf,
   auch nicht als `IPS_ApplyChanges($this->InstanceID)`; wer `IPS_KERNELMESSAGE` registriert, prüft in
   `ApplyChanges` den Runlevel gegen `KR_READY` und erledigt die KR_READY-Arbeit im `MessageSink` über

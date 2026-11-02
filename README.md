@@ -92,7 +92,7 @@ Hinweis:
 - Playlist (Integer)
 - Nightlight On (Boolean)
 - Nightlight Duration (Integer)
-- Nightlight Mode (Integer)
+- Nightlight Mode (Integer): Sofort, Dimmen, Farbübergang, Sonnenaufgang
 - Nightlight Target Brightness (Integer)
 - Remaining Nightlight Duration (Integer)
 

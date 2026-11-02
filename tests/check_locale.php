@@ -8,6 +8,8 @@ declare(strict_types=1);
  *  - Jeder caption/label/suffix-Text aus form.json braucht einen de-Schlüssel in locale.json.
  *  - Jeder Translate('...')-Text (module.php, libs und form.json-Skripte, z. B. onClick)
  *    braucht ebenfalls einen de-Schlüssel.
+ *  - Wörtliche 'Caption' => '<Text>' im module.php (z. B. Optionen einer Aufzählung) sind ein
+ *    Fehler, sobald der Text Buchstaben enthält: Sie erreichen die Darstellung unübersetzt.
  *  - Verwaiste de-Schlüssel werden nur gemeldet, nicht als Fehler gewertet
  *    (dynamische Nutzung wie zusammengesetzte Captions ist möglich).
  *
@@ -51,6 +53,18 @@ foreach ($moduleDirs as $moduleDir) {
     // 2) Translate-Aufrufe aus module.php, den libs und den Skripten in form.json (z. B. onClick)
     $translateTexts = collectTranslateTexts($modulePhp . "\n" . $formRaw . "\n" . $libsCode);
 
+    // 3) Wörtliche Captions im PHP-Code (Darstellungsoptionen u. ä.) laufen an Translate vorbei.
+    //    Erlaubt sind leere Texte und reine Zahlen; alles mit Buchstaben muss übersetzt werden.
+    //    Groß geschrieben: Kleines 'caption' steht in Formularen, die Symcon selbst übersetzt.
+    $rawCaptions = [];
+    if (preg_match_all('/[\'"]Caption[\'"]\s*=>\s*([\'"])((?:(?!\1).)*)\1/', $modulePhp, $m)) {
+        foreach ($m[2] as $text) {
+            if (preg_match('/\p{L}/u', $text)) {
+                $rawCaptions[] = $text;
+            }
+        }
+    }
+
     // Fehlend: form.json-Text ohne de-Schlüssel
     $missingForm = [];
     foreach ($formTexts as $text => $paths) {
@@ -89,13 +103,17 @@ foreach ($moduleDirs as $moduleDir) {
     foreach ($missingPhp as $text) {
         echo "  - \"$text\"\n";
     }
+    echo 'UNÜBERSETZTE CAPTIONS (wörtlich im PHP-Code, ohne Translate): ' . count($rawCaptions) . "\n";
+    foreach ($rawCaptions as $text) {
+        echo "  - \"$text\"\n";
+    }
     echo 'VERWAISTE de-SCHLÜSSEL (nur Hinweis, kein Fehler): ' . count($orphans) . "\n";
     foreach ($orphans as [$key, $note]) {
         echo "  - \"$key\"  [$note]\n";
     }
     echo "\n";
 
-    if ($missingForm !== [] || $missingPhp !== []) {
+    if ($missingForm !== [] || $missingPhp !== [] || $rawCaptions !== []) {
         $fail = true;
     }
 }

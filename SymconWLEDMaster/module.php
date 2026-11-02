@@ -138,10 +138,10 @@ class WLEDMaster extends IPSModuleStrict
                 self::VAR_IDENT_NIGHTLIGHT_MODE,
                 $this->translate("Nightlight Mode"),
                 WLEDPresentations::enumeration([
-                    ['Value' => 0, 'Caption' => 'instant'],
-                    ['Value' => 1, 'Caption' => 'fade'],
-                    ['Value' => 2, 'Caption' => 'color fade'],
-                    ['Value' => 3, 'Caption' => 'sunrise']
+                    ['Value' => 0, 'Caption' => $this->translate('instant')],
+                    ['Value' => 1, 'Caption' => $this->translate('fade')],
+                    ['Value' => 2, 'Caption' => $this->translate('color fade')],
+                    ['Value' => 3, 'Caption' => $this->translate('sunrise')]
                 ]),
                 52
             );
