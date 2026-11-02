@@ -28,6 +28,7 @@ Es werden vier Instanzen zur Verfügung gestellt:
 
 - __WLED Discovery__
   Findet WLED Instanzen im Netzwerk per mDNS und bietet die automatische Anlage der WLED-Instanzen an.
+  Für die Suche nutzt sie die Kerninstanz DNS-SD Control, die Symcon selbst mitbringt. Fehlt sie, zeigt die Discovery einen Hinweis im Formular und sucht nicht.
 
 - __WLED Splitter__
   Der Splitter stellt die Verbindung zwischen dem WebSocket-Client und den WLED-Instanzen her.

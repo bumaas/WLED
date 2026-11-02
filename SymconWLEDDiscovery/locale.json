@@ -1,6 +1,7 @@
 {
   "translations": {
     "de": {
+      "No DNS-SD Control instance found. The search needs this core instance of Symcon.": "Keine DNS-SD-Control-Instanz gefunden. Die Suche braucht diese Kerninstanz von Symcon.",
       "Searching for WLED instances via mDNS (wait 2s)...": "Suche nach WLED Instanzen via mDNS (warte 2s)...",
       "Name": "Name",
       "IP Address": "IP-Adresse",

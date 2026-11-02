@@ -59,7 +59,7 @@ class WLEDDiscovery extends IPSModuleStrict
     public function GetConfigurationForm(): string
     {
         $searchActive = json_decode($this->GetBuffer(self::BUFFER_SEARCHACTIVE), false, 512, JSON_THROW_ON_ERROR);
-        if (!$searchActive) {
+        if (!$searchActive && $this->getMdnsInstance() !== 0) {
             $this->debugExpert(__FUNCTION__, 'Start auto discovery timer');
             $this->SetBuffer(self::BUFFER_SEARCHACTIVE, json_encode(true, JSON_THROW_ON_ERROR));
             // Timer-basiert, damit die Form ohne blockierenden Netzwerkscan schnell geöffnet wird.
@@ -76,9 +76,16 @@ class WLEDDiscovery extends IPSModuleStrict
     private function performDiscovery(): void
     {
         $this->debugExpert(__FUNCTION__, 'Starting discovery');
+        $mdnsID = $this->getMdnsInstance();
+        if ($mdnsID === 0) {
+            $this->debugExpert(__FUNCTION__, 'No DNS-SD Control instance found, discovery skipped', [], true);
+            $this->UpdateFormField('mdnsMissing', 'visible', true);
+            $this->stopSearch();
+            return;
+        }
         $existingMasters   = IPS_GetInstanceListByModuleID(WLEDIds::MODULE_WLED_MASTER);
         $existingSplitters = IPS_GetInstanceListByModuleID(WLEDIds::MODULE_WLED_SPLITTER);
-        $foundDevices      = $this->scanNetworkForDevices();
+        $foundDevices      = $this->scanNetworkForDevices($mdnsID);
         $formValues        = $this->mapDevicesToForm($foundDevices, $existingMasters, $existingSplitters);
 
         $jsonValues = json_encode($formValues, JSON_THROW_ON_ERROR);
@@ -94,9 +101,8 @@ class WLEDDiscovery extends IPSModuleStrict
         $this->UpdateFormField('searchingInfo', 'visible', false);
     }
 
-    private function scanNetworkForDevices(): array
+    private function scanNetworkForDevices(int $mdnsID): array
     {
-        $mdnsID = $this->getMdnsInstance();
         $this->debugExpert(__FUNCTION__, 'mDNS browse started', ['service' => self::DISCOVERY_SEARCHTARGET]);
 
         ZC_QueryServiceType($mdnsID, self::DISCOVERY_SEARCHTARGET, '');
@@ -260,22 +266,14 @@ class WLEDDiscovery extends IPSModuleStrict
         ];
     }
 
+    /**
+     * DNS-SD Control ist eine Kerninstanz und wird als vorhanden vorausgesetzt. Die Discovery
+     * legt sie nie selbst an (Store-Review: keine fremden Objekte ohne Bestätigung); fehlt sie,
+     * liefert die Methode 0 und das Formular zeigt einen Hinweis.
+     */
     private function getMdnsInstance(): int
     {
-        $ids = IPS_GetInstanceListByModuleID(WLEDIds::MODULE_MDNS);
-        if (count($ids) > 0) {
-            return $ids[0];
-        }
-
-        $id = IPS_CreateInstance(WLEDIds::MODULE_MDNS);
-        if ($id === 0) {
-            throw new RuntimeException('DNS-SD Control instance could not be created.');
-        }
-
-        $this->debugExpert(__FUNCTION__, 'Created DNS-SD Control instance', ['instanceID' => $id], true);
-        IPS_SetName($id, 'DNS-SD Control');
-        IPS_ApplyChanges($id);
-        return $id;
+        return IPS_GetInstanceListByModuleID(WLEDIds::MODULE_MDNS)[0] ?? 0;
     }
 
     private function formElements(): array
@@ -297,15 +295,22 @@ class WLEDDiscovery extends IPSModuleStrict
 
     private function formActions(): array
     {
-        $devices = json_decode($this->GetBuffer(self::BUFFER_DEVICES), false, 512, JSON_THROW_ON_ERROR);
+        $devices     = json_decode($this->GetBuffer(self::BUFFER_DEVICES), false, 512, JSON_THROW_ON_ERROR);
+        $mdnsMissing = $this->getMdnsInstance() === 0;
 
         return [
+            [
+                'name'    => 'mdnsMissing',
+                'type'    => 'Label',
+                'caption' => 'No DNS-SD Control instance found. The search needs this core instance of Symcon.',
+                'visible' => $mdnsMissing
+            ],
             [
                 'name'          => 'searchingInfo',
                 'type'          => 'ProgressBar',
                 'caption'       => 'Searching for WLED instances via mDNS (wait 2s)...',
                 'indeterminate' => true,
-                'visible'       => count($devices) === 0
+                'visible'       => !$mdnsMissing && count($devices) === 0
             ],
             [
                 'name'     => 'configurator',

@@ -14,7 +14,9 @@ WLED-Gerät ⇄ WebSocket Client (I/O) ⇄ WLED Splitter ⇄ WLED Master
 - **SymconWLEDDiscovery** (Typ 5): findet Geräte per mDNS (`_wled._tcp`); zeigt pro Host
   bevorzugt den WLED Master, sonst den Splitter. Konfigurationsform wird dynamisch in
   `GetConfigurationForm()` erzeugt (deshalb meldet der Locale-Check dort „verwaiste"
-  Schlüssel — das ist korrekt).
+  Schlüssel — das ist korrekt). DNS-SD Control ist eine Kerninstanz und wird vorausgesetzt;
+  die Discovery legt sie nie selbst an (Store-Review-Punkte 6/13), sondern zeigt ohne sie den
+  Hinweis `mdnsMissing` und sucht nicht (Test `tests/check-discovery-dnssd.php`, Kernel-Stub).
 - **SymconWLEDSplitter** (Typ 2): hängt am WebSocket Client (`ws://<host>/ws`), verteilt
   die WLED-State-JSONs an Master/Segmente.
 - **SymconWLEDMaster** (Typ 3): globale Funktionen — Power, Helligkeit, Transition,
@@ -51,6 +53,8 @@ matcht deshalb case-insensitiv.
   KR_READY nichts nachzuholen hat.
 - CI: `.github/workflows/check.yml` — php -l (PHP 8.4, Module, libs und tests), JSON-Validität,
   Locale-Check, MCP-Prüfung (`bumaas/symcon-mcp-check@v1`), Modultests (`tests/check-*.php`)
+- Kernel-Stub `symcon/SymconStubs` als Submodul `tests/stubs` (gepinnt), Checkout mit
+  `submodules: true`, aus der JSON-Prüfung ausgenommen
 
 ## Konventionen
 
