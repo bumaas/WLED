@@ -1,5 +1,5 @@
 ﻿[![Version](https://img.shields.io/badge/Symcon-PHPModul-red.svg)](https://www.symcon.de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/)
-[![Version](https://img.shields.io/badge/Modul%20Version-1.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/Modul%20Version-1.2-blue.svg)]()
 [![Version](https://img.shields.io/badge/Symcon%20Version-9.0%20%3E-green.svg)](https://www.symcon.de/forum/)
 [![Checks](https://github.com/bumaas/WLED/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/WLED/actions/workflows/check.yml)
 
@@ -84,6 +84,13 @@ Hinweis:
 - Expert: EnableExpertDebug
 - Im Aktionsbereich steht "Effekte/Paletten aktualisieren" zur Verfügung.
 - Die Schaltfläche wird nur angezeigt, wenn Effect Mode oder Palettes aktiviert sind.
+
+### Status der Instanzen
+Splitter, Master und Segmente zeigen an, ob die Verbindung zum WLED-Gerät steht. Jede Instanz folgt dabei ihrer übergeordneten Instanz: Der Splitter dem WebSocket Client, Master und Segmente dem Splitter.
+
+- Aktiv (102): Die Verbindung steht.
+- Inaktiv (104): Es ist keine übergeordnete Instanz verbunden.
+- Keine Verbindung zum WLED-Gerät (201): Der WebSocket Client bzw. der Splitter ist nicht aktiv, etwa weil das Gerät ausgeschaltet ist oder die Adresse nicht stimmt. Sobald die Verbindung wieder steht, werden die Instanzen von selbst wieder aktiv und Master und Segmente holen den aktuellen Zustand.
 
 ## 5. Statusvariablen
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../libs/WLEDIds.php';
 require_once __DIR__ . '/../libs/WLEDHttp.php';
 require_once __DIR__ . '/../libs/ModuleDebug.php';
+require_once __DIR__ . '/../libs/WLEDParentStatus.php';
 
 use libs\WLEDHttp;
 use libs\WLEDIds;
@@ -14,6 +15,7 @@ use libs\WLEDIds;
 class WLEDSplitter extends IPSModuleStrict
 {
     use ModuleDebugTrait;
+    use WLEDParentStatusTrait;
 
     private const string PROP_SYNCPOWER = 'SyncPower';
 
@@ -25,6 +27,9 @@ class WLEDSplitter extends IPSModuleStrict
         // Modul-Eigenschaftserstellung
         $this->RegisterPropertyBoolean(self::PROP_SYNCPOWER, true);
         $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
+
+        // Inaktiv, bis ApplyChanges den Parent geprüft hat (WLEDParentStatusTrait)
+        $this->SetStatus(IS_INACTIVE);
     }
 
     public function ApplyChanges(): void
@@ -33,12 +38,19 @@ class WLEDSplitter extends IPSModuleStrict
         // Diese Zeile nicht löschen
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
+        $this->watchParent();
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;
         }
 
         $this->processHostData();
+    }
+
+    /** Der WebSocket Client ist verbunden; Master und Segmente folgen über IM_CHANGESTATUS. */
+    private function onParentActive(): void
+    {
+        $this->debugExpert(__FUNCTION__, 'WebSocket client active');
     }
 
     private function processHostData(): void
@@ -48,7 +60,7 @@ class WLEDSplitter extends IPSModuleStrict
         if (!empty($host) && Sys_Ping($host, 300)) {
             $this->debugExpert(__FUNCTION__, 'Host reachable');
         }
-        $this->SetStatus(IS_ACTIVE);
+        $this->updateStatusFromParent();
     }
 
     public function RequestAction($Ident, $Value): void
@@ -96,6 +108,9 @@ class WLEDSplitter extends IPSModuleStrict
     {
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
+        if ($this->handleParentMessage($SenderID, $Message)) {
+            return;
+        }
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
             $this->processHostData();
         }

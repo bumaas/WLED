@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/WLEDIds.php';
+require_once __DIR__ . '/WLEDParentStatus.php';
 
 use libs\WLEDIds;
 
@@ -15,6 +16,8 @@ use libs\WLEDIds;
  */
 trait WLEDDeviceTrait
 {
+    use WLEDParentStatusTrait;
+
     private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
 
     /** (Re-)Registriert die Statusvariablen inkl. dynamischer Presentations. */
@@ -41,14 +44,19 @@ trait WLEDDeviceTrait
         return json_encode($form, JSON_THROW_ON_ERROR);
     }
 
+    /** Status aus dem Splitter ableiten; ist er aktiv, wird dabei der Zustand angefordert. */
+    private function updateDeviceInfo(): void
+    {
+        $this->updateStatusFromParent();
+    }
+
     /**
      * Fordert den vollständigen Zustand an. WLED antwortet über den WebSocket mit state und info;
      * den Gerätenamen daraus reicht der Splitter weiter (siehe updateSummaryFromData()).
      */
-    private function updateDeviceInfo(): void
+    private function onParentActive(): void
     {
         $this->GetUpdate();
-        $this->SetStatus(IS_ACTIVE);
     }
 
     /** Zusammenfassung „<Gerätename>:<Suffix>“ aus dem Namen, den der Splitter mitschickt. */
@@ -86,6 +94,9 @@ trait WLEDDeviceTrait
     {
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
+        if ($this->handleParentMessage($SenderID, $Message)) {
+            return;
+        }
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
             $this->updateDeviceInfo();
         }

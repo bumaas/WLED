@@ -1,6 +1,7 @@
 {
   "translations": {
     "de": {
+      "No connection to the WLED device: the WLED Splitter is not active.": "Keine Verbindung zum WLED-Gerät: Der WLED Splitter ist nicht aktiv.",
       "Segment ID": "Segment Nr.",
       "The following variables are optional:": "Die folgenden Variablen sind optional:",
       "Channel White": "Kanal Weiß",

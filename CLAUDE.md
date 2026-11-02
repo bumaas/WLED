@@ -36,6 +36,12 @@ WLED-Gerät ⇄ WebSocket Client (I/O) ⇄ WLED Splitter ⇄ WLED Master
 - `WLEDDeviceTrait.php` — gemeinsame Basis von Master und Segment (SendData/GetUpdate/
   MessageSink, Geräteinfo, Konfigurationsform, Refresh der dynamischen Listen); die
   Klassen liefern `RegisterVariables()`, `showRefreshButton()` und `deviceSummarySuffix()`
+- `WLEDParentStatus.php` — `WLEDParentStatusTrait`: Status folgt dem direkten Parent, Hop für
+  Hop (104 ohne Parent, 201 Parent nicht aktiv, 102 aktiv; `IM_CHANGESTATUS` nur auf dem
+  direkten Parent, `FM_CONNECT`/`FM_DISCONNECT` auf sich selbst). Splitter direkt, Master und
+  Segment über `WLEDDeviceTrait`; Master/Segment fordern beim Aktivwerden den Zustand an.
+  `SetStatus(IS_INACTIVE)` steht am Ende von `Create()` (der Stub verbietet Properties danach).
+  Test `tests/check-status.php`
 - `ModuleDebug.php` — `ModuleDebugTrait` mit `debugExpert()` (Property „Enable extended
   debug output"); Debug-Kategorien sind an Methodennamen (`__FUNCTION__`) gekoppelt —
   beim Umbenennen von Methoden `BASIC_DEBUG_CATEGORIES` mitprüfen. `debugExpert()` darf auch

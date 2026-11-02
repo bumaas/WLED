@@ -1,5 +1,5 @@
 [![Version](https://img.shields.io/badge/Symcon-PHPModul-red.svg)](https://www.symcon.de/en/service/documentation/developer-area/sdk-tools/sdk-php/)
-[![Version](https://img.shields.io/badge/Modul%20Version-1.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/Modul%20Version-1.2-blue.svg)]()
 [![Version](https://img.shields.io/badge/Symcon%20Version-9.0%20%3E-green.svg)](https://www.symcon.de/forum/)
 [![Checks](https://github.com/bumaas/WLED/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/WLED/actions/workflows/check.yml)
 
@@ -84,6 +84,13 @@ Notes:
 - Expert: EnableExpertDebug
 - The action area has a button "Refresh Effects/Palettes".
 - The button only shows up if Effect Mode or Palettes is enabled.
+
+### Instance status
+The splitter, the master and the segments show whether the connection to the WLED device is up. Each instance follows its parent: the splitter follows the WebSocket client, master and segments follow the splitter.
+
+- Active (102): the connection is up.
+- Inactive (104): no parent instance is connected.
+- No connection to the WLED device (201): the WebSocket client or the splitter is not active, for example because the device is switched off or the address is wrong. As soon as the connection is back, the instances become active again on their own, and master and segments fetch the current state.
 
 ## 5. Status variables
 

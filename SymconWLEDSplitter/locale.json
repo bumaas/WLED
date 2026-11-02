@@ -1,6 +1,7 @@
 {
   "translations": {
     "de": {
+      "No connection to the WLED device: the WebSocket client is not active. Is the device switched on and the address correct?": "Keine Verbindung zum WLED-Gerät: Der WebSocket Client ist nicht aktiv. Ist das Gerät eingeschaltet und die Adresse richtig?",
       "Sync Power with Segments": "Synchronisiere den Einschaltzustand des Masters mit den Segmenten",
       "Expert": "Experte",
       "Enable extended debug output": "Erweiterte Debug-Ausgaben aktivieren"

@@ -45,6 +45,8 @@ class WLEDMaster extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_SHOWPLAYLIST, false);
         $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
 
+        // Inaktiv, bis ApplyChanges den Parent geprüft hat (WLEDParentStatusTrait)
+        $this->SetStatus(IS_INACTIVE);
     }
 
     public function ApplyChanges(): void
@@ -55,6 +57,7 @@ class WLEDMaster extends IPSModuleStrict
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
         $this->RegisterVariables();
+        $this->watchParent();
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;

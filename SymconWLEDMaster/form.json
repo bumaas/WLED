@@ -18,5 +18,8 @@
         { "type": "Button", "label": "Update State", "onClick": "WLEDMaster_GetUpdate($id);" },
         { "type": "Button", "name": "refreshButton", "label": "Refresh Presets/Playlists", "onClick": "IPS_RequestAction($id, 'RefreshDynamicLists', '');" },
         { "type": "TestCenter"}
-    ]
+    ],
+  "status": [
+    {"code": 201, "icon": "error", "caption": "No connection to the WLED device: the WLED Splitter is not active."}
+  ]
 }

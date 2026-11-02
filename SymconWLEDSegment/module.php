@@ -60,7 +60,9 @@ class WLEDSegment extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
         $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
-
+
+        // Inaktiv, bis ApplyChanges den Parent geprüft hat (WLEDParentStatusTrait)
+        $this->SetStatus(IS_INACTIVE);
     }
 
     public function ApplyChanges(): void
@@ -73,6 +75,7 @@ class WLEDSegment extends IPSModuleStrict
         $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\"]*.*');
 
         $this->RegisterVariables();
+        $this->watchParent();
 
         if (IPS_GetKernelRunlevel() !== KR_READY) {
             return;
