@@ -63,7 +63,7 @@ class WLEDMaster extends IPSModuleStrict
             return;
         }
 
-        $this->updateDeviceInfo();
+        $this->followParentAndRequestState();
     }
     private function showRefreshButton(): bool
     {

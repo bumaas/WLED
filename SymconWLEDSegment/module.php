@@ -72,7 +72,8 @@ class WLEDSegment extends IPSModuleStrict
         parent::ApplyChanges();
         $this->debugExpert(__FUNCTION__, 'Lifecycle event');
 
-        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[\\\"]*.*');
+        // Hinter der Nummer muss eine Nicht-Ziffer folgen, sonst nimmt Segment 1 auch 10 bis 19 an.
+        $this->SetReceiveDataFilter('.*id\\\":[ \\\"]*(' . $this->ReadPropertyInteger(self::PROP_SEGMENT_ID) . ')[^0-9].*');
 
         $this->RegisterVariables();
         $this->watchParent();
@@ -81,7 +82,7 @@ class WLEDSegment extends IPSModuleStrict
             return;
         }
 
-        $this->updateDeviceInfo();
+        $this->followParentAndRequestState();
     }
     private function showRefreshButton(): bool
     {

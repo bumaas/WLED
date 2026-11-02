@@ -51,6 +51,12 @@ trait Mitschrift
     {
         return $this->GetMessageList();
     }
+
+    /** Buffer vorbelegen, so wie er nach einem Kernel-Neustart gespeichert wiederkommt */
+    public function bufferVorbelegen(string $name, string $wert): void
+    {
+        $this->SetBuffer($name, $wert);
+    }
 }
 
 final class SplitterHarness extends WLEDSplitter
@@ -141,6 +147,7 @@ foreach ([$master, $segment] as $kind) {
     verbinde($kind, id($splitter));
     $kind->MessageSink(time(), id($kind), FM_CONNECT, [id($splitter), 0]);
 }
+pruefe($master->gesendet === ['{"v":true}'] && $segment->gesendet === ['{"v":true}'], 'beim eigenen Verbinden fordern Master und Segment je einmal den Zustand an');
 pruefe(in_array(IM_CHANGESTATUS, $master->nachrichten()[id($splitter)] ?? [], true), 'Master registriert IM_CHANGESTATUS nur auf dem Splitter');
 pruefe(!isset($master->nachrichten()[id($ws)]), 'Master registriert nichts auf dem WebSocket Client');
 pruefe(status($master) === IS_ACTIVE && status($segment) === IS_ACTIVE, 'Splitter aktiv: Master und Segment 102');
@@ -150,17 +157,36 @@ parentStatus(id($splitter), status($splitter), $master, $segment);
 pruefe(status($splitter) === 201, 'WebSocket Client fällt aus: Splitter 201 (ist ' . status($splitter) . ')');
 pruefe(status($master) === 201 && status($segment) === 201, 'Master und Segment ziehen mit: 201 (ist ' . status($master) . '/' . status($segment) . ')');
 
-$master->gesendet = [];
+// Beim Wiederverbinden fragt nur der Splitter einmal; die Antwort geht an alle Kinder.
+// Anlass: /code-review HEAD~2 am 02.11.2026, Befund 5 (vorher fragte jedes Kind einzeln).
+$splitter->gesendet = $master->gesendet = $segment->gesendet = [];
 parentStatus(id($ws), IS_ACTIVE, $splitter);
 parentStatus(id($splitter), status($splitter), $master, $segment);
 pruefe(status($master) === IS_ACTIVE && status($segment) === IS_ACTIVE, 'Verbindung wieder da: Master und Segment 102');
-pruefe(in_array('{"v":true}', $master->gesendet, true), 'Master fordert beim Aktivwerden den Zustand an');
+pruefe($splitter->gesendet === ['{"v":true}'], 'Splitter fordert beim Aktivwerden einmal den Zustand an (gesendet: ' . json_encode($splitter->gesendet) . ')');
+pruefe($master->gesendet === [] && $segment->gesendet === [], 'Master und Segment fragen dabei nicht selbst (gesendet: ' . json_encode([$master->gesendet, $segment->gesendet]) . ')');
 
 echo "Trennen\n";
 verbinde($master, 0);
 $master->MessageSink(time(), id($master), FM_DISCONNECT, [id($splitter), 0]);
 pruefe(status($master) === IS_INACTIVE, 'Master ohne Parent: 104 (ist ' . status($master) . ')');
 pruefe(!in_array(IM_CHANGESTATUS, $master->nachrichten()[id($splitter)] ?? [], true), 'Registrierung auf dem alten Splitter aufgehoben');
+
+echo "Kernel-Neustart: Buffer gespeichert, Registrierungen weg\n";
+// Der Kernel speichert Instanz-Buffer, Nachrichtenregistrierungen aber nicht. Nach dem Neustart
+// steht in ParentID schon die aktuelle ConnectionID, und ApplyChanges muss trotzdem registrieren.
+// Anlass: /code-review HEAD~2 am 02.11.2026, Befund 1.
+$neustart = instanz(MasterHarness::class, WLEDIds::MODULE_WLED_MASTER, 3);
+verbinde($neustart, id($splitter));
+$neustart->bufferVorbelegen('ParentID', (string)id($splitter));
+$neustart->ApplyChanges();
+pruefe(in_array(IM_CHANGESTATUS, $neustart->nachrichten()[id($splitter)] ?? [], true), 'nach dem Neustart IM_CHANGESTATUS auf dem Splitter registriert');
+parentStatus(id($ws), 200, $splitter);
+parentStatus(id($splitter), status($splitter), $neustart);
+pruefe(status($neustart) === 201, 'nach dem Neustart folgt der Master dem Splitter auf 201 (ist ' . status($neustart) . ')');
+parentStatus(id($ws), IS_ACTIVE, $splitter);
+parentStatus(id($splitter), status($splitter), $neustart);
+pruefe(status($neustart) === IS_ACTIVE, 'und wieder zurück auf 102 (ist ' . status($neustart) . ')');
 
 foreach ($fehler as $f) {
     echo 'FEHLER ', $f, "\n";

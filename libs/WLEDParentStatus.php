@@ -29,15 +29,14 @@ trait WLEDParentStatusTrait
         $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
 
+        // Nicht am Buffer festmachen, ob schon registriert ist: Buffer übersteht einen Kernel-Neustart,
+        // die Nachrichtenregistrierung nicht. Maßgeblich ist die Liste des Kernels.
         $alt = (int)$this->GetBuffer(self::BUFFER_PARENT_ID);
         $neu = IPS_GetInstance($this->InstanceID)['ConnectionID'];
-        if ($alt === $neu) {
-            return;
-        }
-        if ($alt > 0) {
+        if ($alt > 0 && $alt !== $neu) {
             $this->UnregisterMessage($alt, IM_CHANGESTATUS);
         }
-        if ($neu > 0) {
+        if ($neu > 0 && !in_array(IM_CHANGESTATUS, $this->GetMessageList()[$neu] ?? [], true)) {
             $this->RegisterMessage($neu, IM_CHANGESTATUS);
         }
         $this->SetBuffer(self::BUFFER_PARENT_ID, (string)$neu);

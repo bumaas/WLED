@@ -19,6 +19,7 @@ trait WLEDDeviceTrait
     use WLEDParentStatusTrait;
 
     private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
+    private const string BUFFER_SUMMARY               = 'Summary';
 
     /** (Re-)Registriert die Statusvariablen inkl. dynamischer Presentations. */
     abstract private function RegisterVariables(): void;
@@ -44,19 +45,25 @@ trait WLEDDeviceTrait
         return json_encode($form, JSON_THROW_ON_ERROR);
     }
 
-    /** Status aus dem Splitter ableiten; ist er aktiv, wird dabei der Zustand angefordert. */
-    private function updateDeviceInfo(): void
+    /**
+     * Nach eigenem ApplyChanges oder Verbinden: Status aus dem Splitter ableiten und, wenn er aktiv
+     * ist, den Zustand anfordern. WLED antwortet über den WebSocket mit state und info; den
+     * Gerätenamen daraus reicht der Splitter weiter (siehe updateSummaryFromData()).
+     */
+    private function followParentAndRequestState(): void
     {
         $this->updateStatusFromParent();
+        if ($this->HasActiveParent()) {
+            $this->GetUpdate();
+        }
     }
 
     /**
-     * Fordert den vollständigen Zustand an. WLED antwortet über den WebSocket mit state und info;
-     * den Gerätenamen daraus reicht der Splitter weiter (siehe updateSummaryFromData()).
+     * Wird der Splitter aktiv, fordert er selbst einmal den Zustand an und verteilt die Antwort an
+     * alle Kinder. Master und Segment fragen deshalb hier nicht noch einmal einzeln.
      */
     private function onParentActive(): void
     {
-        $this->GetUpdate();
     }
 
     /** Zusammenfassung „<Gerätename>:<Suffix>“ aus dem Namen, den der Splitter mitschickt. */
@@ -67,8 +74,9 @@ trait WLEDDeviceTrait
             return;
         }
         $summary = sprintf('%s:%s', $name, $this->deviceSummarySuffix());
-        if (IPS_GetObject($this->InstanceID)['ObjectSummary'] !== $summary) {
+        if ($this->GetBuffer(self::BUFFER_SUMMARY) !== $summary) {
             $this->SetSummary($summary);
+            $this->SetBuffer(self::BUFFER_SUMMARY, $summary);
         }
     }
 
@@ -95,10 +103,14 @@ trait WLEDDeviceTrait
         parent::MessageSink($TimeStamp, $SenderID, $Message, $Data);
 
         if ($this->handleParentMessage($SenderID, $Message)) {
+            if ($Message === FM_CONNECT && $this->HasActiveParent()) {
+                $this->GetUpdate();
+            }
             return;
         }
         if (($Message === IPS_KERNELMESSAGE) && ($Data[0] === KR_READY)) {
-            $this->updateDeviceInfo();
+            // Den Zustand fordert beim Start der Splitter an, sobald der WebSocket Client aktiv ist.
+            $this->updateStatusFromParent();
         }
     }
 

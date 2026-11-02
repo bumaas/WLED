@@ -13,6 +13,6 @@
     {"type": "TestCenter"}
   ],
   "status": [
-    {"code": 201, "icon": "error", "caption": "No connection to the WLED device: the WebSocket client is not active. Is the device switched on and the address correct?"}
+    {"code": 201, "icon": "error", "caption": "No connection to the WLED device: the WebSocket client is not active. Check that it is opened, the device is switched on and the address is correct."}
   ]
 }

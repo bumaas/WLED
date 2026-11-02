@@ -90,7 +90,7 @@ Splitter, Master und Segmente zeigen an, ob die Verbindung zum WLED-Gerät steht
 
 - Aktiv (102): Die Verbindung steht.
 - Inaktiv (104): Es ist keine übergeordnete Instanz verbunden.
-- Keine Verbindung zum WLED-Gerät (201): Der WebSocket Client bzw. der Splitter ist nicht aktiv, etwa weil das Gerät ausgeschaltet ist oder die Adresse nicht stimmt. Sobald die Verbindung wieder steht, werden die Instanzen von selbst wieder aktiv und Master und Segmente holen den aktuellen Zustand.
+- Keine Verbindung zum WLED-Gerät (201): Der WebSocket Client bzw. der Splitter ist nicht aktiv, etwa weil das Gerät ausgeschaltet ist, die Adresse nicht stimmt oder der WebSocket Client nicht geöffnet ist. Sobald die Verbindung wieder steht, werden die Instanzen von selbst wieder aktiv und Master und Segmente holen den aktuellen Zustand.
 
 ## 5. Statusvariablen
 

@@ -90,7 +90,7 @@ The splitter, the master and the segments show whether the connection to the WLE
 
 - Active (102): the connection is up.
 - Inactive (104): no parent instance is connected.
-- No connection to the WLED device (201): the WebSocket client or the splitter is not active, for example because the device is switched off or the address is wrong. As soon as the connection is back, the instances become active again on their own, and master and segments fetch the current state.
+- No connection to the WLED device (201): the WebSocket client or the splitter is not active, for example because the device is switched off, the address is wrong or the WebSocket client is not opened. As soon as the connection is back, the instances become active again on their own, and master and segments fetch the current state.
 
 ## 5. Status variables
 

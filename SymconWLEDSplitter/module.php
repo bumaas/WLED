@@ -47,19 +47,19 @@ class WLEDSplitter extends IPSModuleStrict
         $this->processHostData();
     }
 
-    /** Der WebSocket Client ist verbunden; Master und Segmente folgen über IM_CHANGESTATUS. */
+    /**
+     * Der WebSocket Client ist verbunden: einmal den vollständigen Zustand anfordern. Die Antwort
+     * geht an Master und Segmente, die über IM_CHANGESTATUS ebenfalls aktiv werden.
+     */
     private function onParentActive(): void
     {
-        $this->debugExpert(__FUNCTION__, 'WebSocket client active');
+        $this->debugExpert(__FUNCTION__, 'WebSocket client active, requesting state');
+        $this->SendData(json_encode(['v' => true], JSON_THROW_ON_ERROR));
     }
 
     private function processHostData(): void
     {
-        $host = WLEDHttp::getHostFromSplitter($this->InstanceID);
-        $this->SetSummary($host);
-        if (!empty($host) && Sys_Ping($host, 300)) {
-            $this->debugExpert(__FUNCTION__, 'Host reachable');
-        }
+        $this->SetSummary(WLEDHttp::getHostFromSplitter($this->InstanceID));
         $this->updateStatusFromParent();
     }
 
@@ -127,7 +127,7 @@ class WLEDSplitter extends IPSModuleStrict
 
         $jsonData = json_decode($buffer, true, 512, JSON_THROW_ON_ERROR);
 
-        if (!isset($jsonData['state'])) {
+        if (!isset($jsonData['state']) || !is_array($jsonData['state'])) {
             return '';
         }
 
@@ -154,6 +154,10 @@ class WLEDSplitter extends IPSModuleStrict
         $powerOn = false;
 
         foreach ($state['seg'] as $segmentData) {
+            if (!is_array($segmentData)) {
+                $this->debugExpert(__FUNCTION__, 'Segment entry is not an object, skipped', ['entry' => $segmentData]);
+                continue;
+            }
             if ($state['on'] === false && $this->ReadPropertyBoolean(self::PROP_SYNCPOWER)) {
                 // Alle Segmente ausschalten, wenn WLED ausgeschaltet wird.
                 $segmentData['on'] = false;
