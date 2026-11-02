@@ -35,7 +35,8 @@ WLED-Gerät ⇄ WebSocket Client (I/O) ⇄ WLED Splitter ⇄ WLED Master
   Klassen liefern `RegisterVariables()`, `showRefreshButton()` und `deviceSummarySuffix()`
 - `ModuleDebug.php` — `ModuleDebugTrait` mit `debugExpert()` (Property „Enable extended
   debug output"); Debug-Kategorien sind an Methodennamen (`__FUNCTION__`) gekoppelt —
-  beim Umbenennen von Methoden `BASIC_DEBUG_CATEGORIES` mitprüfen
+  beim Umbenennen von Methoden `BASIC_DEBUG_CATEGORIES` mitprüfen. `debugExpert()` darf auch
+  vor dem Registrieren der Property laufen (in `Create()`); dann gilt sie als aus
 
 Alle Module: `IPSModuleStrict` + `declare(strict_types=1)`.
 Hinweis: Im Code kommt auch kleingeschriebenes `->translate()` vor — der Locale-Check

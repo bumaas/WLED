@@ -18,7 +18,13 @@ trait ModuleDebugTrait
     // EnableExpertDebug=false logs only BASIC_DEBUG_CATEGORIES to keep logs concise.
     private function debugExpert(string $category, string $message, array $context = [], bool $always = false): void
     {
-        $expertDebugEnabled = @($this->ReadPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG));
+        // In Create() läuft das Debug teils, bevor die Property registriert ist. Symcon meldet das als
+        // Warnung (@), der Kernel-Stub wirft; beides heißt „noch keine Experten-Ausgabe“.
+        try {
+            $expertDebugEnabled = @($this->ReadPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG));
+        } catch (Throwable) {
+            $expertDebugEnabled = false;
+        }
         if (!$always && !$expertDebugEnabled) {
             if (!in_array($category, self::BASIC_DEBUG_CATEGORIES, true)) {
                 return;
