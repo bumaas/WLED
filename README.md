@@ -4,6 +4,9 @@
 [![Checks](https://github.com/bumaas/WLED/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/WLED/actions/workflows/check.yml)
 
 # WLED
+
+English version: [README.en.md](README.en.md)
+
 Die Bibliothek integriert [WLED](http://kno.wled.ge) nahtlos in Symcon und ermöglicht die Steuerung kompatibler LED-Installationen.
 Über die Discovery-Funktion werden WLED-Geräte im Netzwerk automatisch erkannt und für die weitere Einrichtung vorbereitet.
 Master- und Segment-Module bilden zentrale sowie segmentbezogene Funktionen wie Helligkeit, Farben, Effekte, Paletten, Presets und Playlists in Symcon ab.
