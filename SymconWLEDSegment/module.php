@@ -60,8 +60,7 @@ class WLEDSegment extends IPSModuleStrict
         $this->RegisterPropertyBoolean(self::PROP_MORE_COLORS, false);
         $this->RegisterPropertyBoolean(self::PROP_SHOW_CCT, false);
         $this->RegisterPropertyBoolean(self::PROP_ENABLE_EXPERT_DEBUG, false);
-
-        $this->RegisterAttributeString(self::ATTR_DEVICE_INFO, json_encode([], JSON_THROW_ON_ERROR));
+
     }
 
     public function ApplyChanges(): void
@@ -215,7 +214,7 @@ class WLEDSegment extends IPSModuleStrict
         $data = json_decode($JSONString, false, 512, JSON_THROW_ON_ERROR);
         $this->debugExpert(__FUNCTION__, 'Buffer', ['buffer' => $data->Buffer]);
         $data = json_decode($data->Buffer, true, 512, JSON_THROW_ON_ERROR);
-
+        $this->updateSummaryFromData($data);
 
         //daten verarbeiten!
         if (array_key_exists("on", $data)) {

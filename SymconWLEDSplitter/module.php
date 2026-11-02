@@ -118,8 +118,18 @@ class WLEDSplitter extends IPSModuleStrict
 
         $state = $jsonData['state'];
 
+        // WLED schickt info über den WebSocket mit (beim Verbinden, bei Änderungen, auf {"v":true}).
+        // Den Gerätenamen bekommen Master und Segmente für ihre Zusammenfassung mit.
+        $deviceName = $jsonData['info']['name'] ?? '';
+        $mitName    = static function (array $daten) use ($deviceName): array {
+            if (is_string($deviceName) && $deviceName !== '') {
+                $daten[WLEDIds::KEY_DEVICE_NAME] = $deviceName;
+            }
+            return $daten;
+        };
+
         // Nachricht zum Master schicken
-        $this->SendDataToMaster(json_encode($state, JSON_THROW_ON_ERROR));
+        $this->SendDataToMaster(json_encode($mitName($state), JSON_THROW_ON_ERROR));
 
         // Nachricht an die Segmente schicken
         if (!isset($state['seg']) || !is_array($state['seg'])) {
@@ -135,7 +145,7 @@ class WLEDSplitter extends IPSModuleStrict
                 $this->debugExpert(__FUNCTION__, 'Turn off all segments');
             }
 
-            $this->SendDataToSegment(json_encode($segmentData, JSON_THROW_ON_ERROR));
+            $this->SendDataToSegment(json_encode($mitName($segmentData), JSON_THROW_ON_ERROR));
 
             if (($segmentData['on'] ?? false) === true) {
                 $powerOn = true;

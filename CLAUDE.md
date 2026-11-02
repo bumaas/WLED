@@ -18,7 +18,10 @@ WLED-Gerät ⇄ WebSocket Client (I/O) ⇄ WLED Splitter ⇄ WLED Master
   die Discovery legt sie nie selbst an (Store-Review-Punkte 6/13), sondern zeigt ohne sie den
   Hinweis `mdnsMissing` und sucht nicht (Test `tests/check-discovery-dnssd.php`, Kernel-Stub).
 - **SymconWLEDSplitter** (Typ 2): hängt am WebSocket Client (`ws://<host>/ws`), verteilt
-  die WLED-State-JSONs an Master/Segmente.
+  die WLED-State-JSONs an Master/Segmente. Den Gerätenamen aus `info.name` hängt er unter
+  `WLEDIds::KEY_DEVICE_NAME` an; daraus setzen Master und Segment ihre Zusammenfassung. Per HTTP
+  holen Master/Segment nur noch die Listen (`/presets.json`, `/json/eff`, `/json/pal`), die WLED
+  über den WebSocket nicht liefert (Test `tests/check-geraetename.php`, Fixture echter WS-Mitschnitt).
 - **SymconWLEDMaster** (Typ 3): globale Funktionen — Power, Helligkeit, Transition,
   Presets/Playlists (Start über `ps`; `pl` ist read-only!), Nachtlicht.
 - **SymconWLEDSegment** (Typ 3): pro Segment — Power, Helligkeit, CCT, Effekte, Paletten,

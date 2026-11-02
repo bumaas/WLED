@@ -17,4 +17,7 @@ final class WLEDIds
     public const string DATA_DEVICE_TO_SPLITTER    = '{7B4E5B18-F847-8F8A-F148-3FB3F482E295}';
     public const string DATA_SPLITTER_TO_SEGMENT = '{D2353839-DA64-DF79-7CD5-4DD827DCE82A}';
     public const string DATA_SPLITTER_TO_MASTER  = '{79D5ACD0-7EED-FBA6-22D7-04AEB1BBBE97}';
+
+    // Schlüssel, unter dem der Splitter den Gerätenamen (info.name) an Master und Segmente mitgibt
+    public const string KEY_DEVICE_NAME = '_deviceName';
 }

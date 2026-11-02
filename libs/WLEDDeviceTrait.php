@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/WLEDIds.php';
-require_once __DIR__ . '/WLEDHttp.php';
 
-use libs\WLEDHttp;
 use libs\WLEDIds;
 
 /**
@@ -18,9 +16,6 @@ use libs\WLEDIds;
 trait WLEDDeviceTrait
 {
     private const string ACTION_REFRESH_DYNAMIC_LISTS = 'RefreshDynamicLists';
-
-    //Attributes
-    private const string ATTR_DEVICE_INFO = 'DeviceInfo';
 
     /** (Re-)Registriert die Statusvariablen inkl. dynamischer Presentations. */
     abstract private function RegisterVariables(): void;
@@ -46,16 +41,27 @@ trait WLEDDeviceTrait
         return json_encode($form, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * Fordert den vollständigen Zustand an. WLED antwortet über den WebSocket mit state und info;
+     * den Gerätenamen daraus reicht der Splitter weiter (siehe updateSummaryFromData()).
+     */
     private function updateDeviceInfo(): void
     {
         $this->GetUpdate();
-        $host       = WLEDHttp::getHostFromDevice($this->InstanceID);
-        $deviceInfo = WLEDHttp::getData($host, '/json/info', 2);
-        if (count($deviceInfo)) {
-            $this->WriteAttributeString(self::ATTR_DEVICE_INFO, json_encode($deviceInfo, JSON_THROW_ON_ERROR));
-            $this->SetSummary(sprintf('%s:%s', $deviceInfo['name'], $this->deviceSummarySuffix()));
-        }
         $this->SetStatus(IS_ACTIVE);
+    }
+
+    /** Zusammenfassung „<Gerätename>:<Suffix>“ aus dem Namen, den der Splitter mitschickt. */
+    private function updateSummaryFromData(array $data): void
+    {
+        $name = $data[WLEDIds::KEY_DEVICE_NAME] ?? '';
+        if (!is_string($name) || $name === '') {
+            return;
+        }
+        $summary = sprintf('%s:%s', $name, $this->deviceSummarySuffix());
+        if (IPS_GetObject($this->InstanceID)['ObjectSummary'] !== $summary) {
+            $this->SetSummary($summary);
+        }
     }
 
     public function GetUpdate(): void
